@@ -1,0 +1,45 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+checkForWindowResize	libs/framework.js	/^function checkForWindowResize(gl) {$/;"	f
+const.pos	00_empty/main.js	/^  const mouse = {$/;"	p
+const.rotation	00_empty/main.js	/^const camera = {$/;"	p
+createContext	libs/framework.js	/^function createContext(width, height) {$/;"	f
+createProgram	libs/framework.js	/^function createProgram(gl, vertex, fragment) {$/;"	f
+createSGContext	libs/framework.js	/^function createSGContext(gl, projectionMatrix) {$/;"	f
+createSceneGraph	00_empty/main.js	/^function createSceneGraph(resources) {$/;"	f
+createShader	libs/framework.js	/^function createShader(gl, code, type) {$/;"	f
+gl	00_empty/main.js	/^var gl = null,$/;"	v
+hex2rgba	libs/framework.js	/^function hex2rgba(color) {$/;"	f
+init	00_empty/main.js	/^function init(resources) {$/;"	f
+initInteraction	00_empty/main.js	/^function initInteraction(canvas) {$/;"	f
+isValidAttributeLocation	libs/framework.js	/^function isValidAttributeLocation(loc) {$/;"	f
+isValidUniformLocation	libs/framework.js	/^function isValidUniformLocation(loc) {$/;"	f
+loadResources	libs/framework.js	/^function loadResources(resources, callback) {$/;"	f
+loadResources.isImageUrl	libs/framework.js	/^  function isImageUrl(url) {$/;"	f
+loadResources.isModelUrl	libs/framework.js	/^  function isModelUrl(url) {$/;"	f
+loadResources.isObjUrl	libs/framework.js	/^  function isObjUrl(url) {$/;"	f
+makeRect	libs/framework.js	/^function makeRect(width, height) {$/;"	f
+makeSphere	libs/framework.js	/^function makeSphere(radius, latitudeBands, longitudeBands) {$/;"	f
+modelRenderer	libs/framework.js	/^function modelRenderer(model) {$/;"	f
+modelRenderer.init	libs/framework.js	/^  function init(gl) {$/;"	f
+parseMtlFile	libs/framework.js	/^function parseMtlFile(fileContent) {$/;"	f
+parseObjFile	libs/framework.js	/^function parseObjFile(objectData) {$/;"	f
+render	00_empty/main.js	/^function render() {$/;"	f
+root	00_empty/main.js	/^var root = null;$/;"	v
+sg.context	libs/framework.js	/^  },$/;"	p
+sg.draw	libs/framework.js	/^  },$/;"	m
+sg.drawRect	libs/framework.js	/^  },$/;"	m
+sg.drawSphere	libs/framework.js	/^  },$/;"	m
+sg.root	libs/framework.js	/^var sg = {$/;"	m
+sg.rotateX	libs/framework.js	/^  },$/;"	m
+sg.rotateY	libs/framework.js	/^  },$/;"	m
+sg.rotateZ	libs/framework.js	/^  },$/;"	m
+sg.scale	libs/framework.js	/^  },$/;"	m
+sg.shader	libs/framework.js	/^  },$/;"	m
+sg.transform	libs/framework.js	/^  },$/;"	m
+sg.translate	libs/framework.js	/^  },$/;"	m
+toPos	00_empty/main.js	/^  function toPos(event) {$/;"	f

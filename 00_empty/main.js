@@ -98,8 +98,7 @@ function render() {
   // where should the camera point
   let center = [camera.position.x + Math.cos(glm.deg2rad(camera.rotation.x)), camera.position.y + Math.sin(glm.deg2rad(camera.rotation.y)), camera.position.z + Math.cos(glm.deg2rad(camera.rotation.y)) + Math.sin(glm.deg2rad(camera.rotation.x))];
   // camera orientation
-  //let up = vec3.cross(vec3.create(), vec3.fromValues(center[0], center[1], center[2]), vec3.fromValues(-1, 0, 0));
-  let up = [0, 1, 0];
+  let up = vec3.cross(vec3.create(), vec3.fromValues(center[0], center[1], center[2]), vec3.fromValues(-1, 0, 0));
   // generate view matrix from position, center and up
   let lookAtMatrix = mat4.lookAt(mat4.create(), [camera.position.x, camera.position.y, camera.position.z], center, up);
   context.viewMatrix = lookAtMatrix;
