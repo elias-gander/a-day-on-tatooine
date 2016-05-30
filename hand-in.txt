@@ -1,0 +1,29 @@
+MOVIE NAME: 
+A day on Tatooine
+
+NAME AND IMMATRICULATION NUMBER OF BOTH STUDENTS:
+k1157304 - Martin Reif
+k1456336 - Elias Gander
+
+OVERALL MOVIE IDEA AND CONCEPT:
+The movie is set a long time ago in a galaxy far, far away on Tatooine,
+a planet that has two suns and is completely covered by desert.
+Desert dunes setting created from heightmap. 
+For some special terms and names  used please refer to:
+www.starwars.wikia.com
+
+	SCENE1: Tusken-Raiders playing beach-volleyball. More Raiders in
+	the back keeping an eye on the observer (billboards facing
+	the camera).
+	
+	SCENE2: Animating a manually composed Jawa-Sandcrawler model
+	that includes two spotlights. 
+		
+	SCENE3: Showing Luke and a hologram (semi transparent object)
+	of Princess Leia projected by R2D2. Luke drives a away in his land-
+	speeder(specular material).
+
+CHOSEN SPECIAL EFFECTS:
+*Terrain from heightmap
+*Postprocessing shader
+*Billboarding
