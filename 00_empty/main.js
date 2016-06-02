@@ -2,23 +2,23 @@
 var gl = null,
     program = null;
 
-// camera control
+// camera control, set starting viewpoint here!
 const camera = {
   rotation: {
-    x: 0,
-    y: 0
+    x: 90,
+    y: 20
   },
   position: {
-    x: -50,
-    y: -4,
-    z: -50
+    x: -0,
+    y: -20,
+    z: -100
   },
   direction: {
     x: 0,
     y: 0,
     z: 0
   },
-  speed: 1  // TODO choose speed
+  speed: 10  // TODO choose speed
 };
 
 // scenegraph
@@ -29,7 +29,7 @@ var root = null;
  */
 function init(resources) {
   //create a GL context
-  gl = createContext(1650 /*width*/, 850 /*height*/); // TODO which width and height?
+  gl = createContext(800 /*width*/, 600 /*height*/); // TODO which width and height?
 
   gl.enable(gl.DEPTH_TEST);
 
@@ -48,33 +48,174 @@ function init(resources) {
 function createSceneGraph(resources) {
   // camera test scene
   let root = new ShaderSGNode(program);
+
+  let enableTexNode = new SetUniformSGNode('u_enableObjectTexture', true);
+
   let sphere = makeSphere();
   let sphereModelNode = new RenderSGNode(sphere);
-  let sphereTexNode = new AdvancedTextureSGNode(resources.tex);   // TODO sphere texture doesn't work
+  let sphereTexNode = new AdvancedTextureSGNode(resources.tex);   // TODO sphere texture doesn't work - FIXED: enable texture by setting uniform u_enableObjectTexture
   let sphereMatNode = new MaterialSGNode();
   let sphereTranNode = new TransformationSGNode(glm.transform({translate: [0, 0, 0]}));
 
-  let cube = makeRect();
-  let cubeModelNode = new RenderSGNode(cube);
-  let cubeTexNode = new AdvancedTextureSGNode(resources.tex);
-  let cubeMatNode = new MaterialSGNode();
-  let cubeTranNode = new TransformationSGNode(glm.transform({translate: [-6, -6, -6]}));
+  let rect = makeRect(1.5, 1.3);
+  let rectShaderNode = new ShaderSGNode(createProgram(gl, resources.whiteVs, resources.whiteFs));   // trying to use a different shader - how to combine shader results?
+  let rectModelNode = new RenderSGNode(rect);
+  let rectTexNode = new AdvancedTextureSGNode(resources.tex);
+  let rectMatNode = new MaterialSGNode();
+  let rectTranNode = new TransformationSGNode(glm.transform({translate: [-6, -6, -6]}));
 
-  let lightNode = new LightSGNode([0, 2, -2]);
+  let lightSphere = makeSphere(0.5, 20, 20);
+  let lightModelNode = new RenderSGNode(lightSphere);
+  let lightTexNode = new AdvancedTextureSGNode(resources.sunTex);
+  let lightMatNode = new MaterialSGNode();
+  let lightNode = new LightSGNode([0, 0, -15]);
+
+  let light2Sphere = makeSphere(0.5, 20, 20);
+  let light2ModelNode = new RenderSGNode(lightSphere);
+  let light2Node = new LightSGNode([-2, -5, -25]);
+  let light2ShaderNode = new ShaderSGNode(createProgram(gl, resources.whiteVs, resources.whiteFs));
+
+  // test terrain generation from heightmap
+  let terrain = generateTerrain(resources.heightmap, 16, 16);
+  let terrainModelNode = new RenderSGNode(terrain);
+  let terrainTexNode = new AdvancedTextureSGNode(resources.sandTex);
+  let terrainMatNode = new MaterialSGNode();
+  let terrainTranNode = new TransformationSGNode(glm.transform({translate: [100, 100, 100], rotateX: 270}));
+
+  // show terrain
+  terrainTranNode.append(terrainMatNode);
+  terrainMatNode.append(terrainTexNode);
+  terrainTexNode.append(terrainModelNode);
+  terrainTexNode.append(enableTexNode);
+  root.append(terrainTranNode);
+
 
   sphereTranNode.append(sphereMatNode);
   sphereMatNode.append(sphereTexNode);
+  sphereTexNode.append(enableTexNode);
   sphereTexNode.append(sphereModelNode);
   root.append(sphereTranNode);
 
-  cubeTranNode.append(cubeMatNode);
-  cubeMatNode.append(cubeTexNode);
-  cubeTexNode.append(cubeModelNode);
-  root.append(cubeTranNode);
+  rectShaderNode.append(rectTranNode);
+  rectTranNode.append(rectMatNode);
+  rectMatNode.append(rectTexNode);
+  rectTexNode.append(rectModelNode);
+  root.append(rectShaderNode);
 
+  lightNode.append(lightMatNode);   // TODO applying a texture to lightnode changes it's position...why? - try without lightTex/enableTex nodes
+  lightMatNode.append(lightTexNode);
+  lightTexNode.append(enableTexNode);
+  lightTexNode.append(sphereModelNode);
   root.append(lightNode);
 
+  light2ShaderNode.append(light2Node);
+  light2Node.append(light2ModelNode);   // TODO how to skin a light node? even second light source to illuminate first does not make texture on first visible
+  root.append(light2ShaderNode);
+
   return root;
+}
+
+/**
+ * builds up the scenegraph and returns the root node#
+ * @param heightmap: a greyscale image where darker == lower and lighter == higher terrain
+ * @param stepX|Y: how many pixels to skip in x|y direction when parsing the heightmap
+ */
+function generateTerrain(heightmap, stepX, stepY) {
+  // TODO fix stepX|Y == 1 does not work! (incorrect triangle indices most likely)
+
+  if(heightmap.width % stepX != 0 || heightmap.height % stepY != 0) {
+    return null;
+  }
+
+  // Create a Canvas element
+  var canvas = document.createElement('canvas');
+
+  // Size the canvas to the element
+  canvas.width = heightmap.width;
+  canvas.height = heightmap.height;
+
+  // Draw image onto the canvas
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(heightmap, 0, 0);
+
+  // Finally, get the image data
+  // ('data' is an array of RGBA pixel values for each pixel) ... 1 pixel is 4 sequential values in the array
+  var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+  // returns
+  var vertices = [];
+  var normal = [];
+  var texture = [];  // TODO set texture coordinates
+  var index = [];
+
+
+  // iterate through image data, skipping according to resolution
+  var meshWidth = heightmap.width / stepX + 1;
+  var vertexIndex = 0;
+  var y = 0, x = 0;
+  var lastLine = false;
+  while(y < heightmap.height) {
+    if(x >= heightmap.width * 4) {
+      y += stepY;
+      x = 0;
+
+      // to always incorporate the last line of the heightmap into our mesh
+      if(y == heightmap.height && stepY != 1) {
+        lastLine = true;
+        y--;
+      }
+    } else {
+
+      var i = y * heightmap.width * 4 + x * 4;
+      var z = data[i];  // deduct z-Value [0, 1] from R-value of pixel (G and B-values in data[i+1..3] are assumed to be equal in greyscale heightmap!);
+      //console.log(i + ": (" + data[i] + ", " + data[i+1] + ", " + data[i+2] + ", " + data[i+3] + ")");
+      //console.log(z);
+      // save vertex
+      vertices.push(x/4, y, z);
+      normal.push(0, 1, 0);     // TODO set normal vectors
+
+      // now the harder part: building triangles:
+      // from every vertex start 2 triangles: type A = {i, i+1, i+meshWidth} and type B = {i, i+width, i+meshWidth-1}   (meshWidth == vertices in a line)
+      // but: no type B triangle from first vertex in line, not type A triangle from last vertex in line, no triangles from vertices in last line
+      // this is because we build a plane and not something voluminous
+      if(!lastLine) {
+        // not in last line
+        if(x > 0) {
+          // not first vertex in line
+          // push type B
+          index.push(vertexIndex, vertexIndex + meshWidth, vertexIndex + meshWidth - 1);
+          // add texture coordinates
+          texture.push( 1, 0,
+                        0, 1,
+                        1, 1);
+        }
+        if(x < heightmap.width * 4 - 1) {
+          // not last vertex in line
+          // push type A
+          index.push(vertexIndex, vertexIndex + 1, vertexIndex + meshWidth);
+          // add texture coordinates
+          texture.push( 0, 0,
+                        0, 1,
+                        1, 0);
+        }
+      }
+
+      vertexIndex++;
+      x += stepX * 4;
+
+      // to always incorporate the last column of the heightmap into our mesh
+      if(x == heightmap.width * 4 && stepX != 1) {
+        x--;
+      }
+    }
+  }
+
+  return {
+    position: vertices,
+    normal: normal,
+    texture: texture,
+    index: index
+  };
 }
 
 /**
@@ -90,7 +231,7 @@ function render() {
   const context = createSGContext(gl);
 
   // TODO which Field of view/other parameters?
-  context.projectionMatrix = mat4.perspective(mat4.create(), 50, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.01, 1000);
+  context.projectionMatrix = mat4.perspective(mat4.create(), 50, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.01, 10000);
 
   // free moving camera: http://gamedev.stackexchange.com/questions/43588/how-to-rotate-camera-centered-around-the-cameras-position
   // gl-matrix doc: http://glmatrix.net/docs/mat4.html
@@ -108,7 +249,7 @@ function render() {
   camera.direction.y = lookAtMatrix[6];
   camera.direction.z = lookAtMatrix[10];
 
-  console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
+  //console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
 
   //render scenegraph
   root.render(context);
@@ -123,9 +264,14 @@ loadResources({
   vs: 'shader/shadow.vs.glsl',
   fs: 'shader/shadow.fs.glsl',
 
+  whiteVs : 'shader/white.vs.glsl',
+  whiteFs : 'shader/white.fs.glsl',
+
   // terrain
   heightmap: 'assets/terrain/heightmap.png',
-  tex: 'assets/lava.jpg'  // TODO lava texture on sphere does not appear - why?
+  tex: 'assets/lava.jpg',
+  sunTex: 'assets/sun.jpg',
+  sandTex: 'assets/sand.jpg'
 
 }).then(function (resources /*an object containing our keys with the loaded resources*/) {
   init(resources);

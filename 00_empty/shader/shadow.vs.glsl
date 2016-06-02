@@ -9,7 +9,7 @@ uniform mat3 u_normalMatrix;
 uniform mat4 u_projection;
 uniform mat4 u_invView;
 
-uniform vec3 u_lightPos;
+uniform vec3 u_lightPos;					// TODO allow multiple lights
 uniform mat4 u_eyeToLightMatrix;
 
 //output of this shader

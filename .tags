@@ -12,6 +12,7 @@ createProgram	libs/framework.js	/^function createProgram(gl, vertex, fragment) {
 createSGContext	libs/framework.js	/^function createSGContext(gl, projectionMatrix) {$/;"	f
 createSceneGraph	00_empty/main.js	/^function createSceneGraph(resources) {$/;"	f
 createShader	libs/framework.js	/^function createShader(gl, code, type) {$/;"	f
+generateTerrain	00_empty/main.js	/^function generateTerrain(heightmap, stepX, stepY) {$/;"	f
 gl	00_empty/main.js	/^var gl = null,$/;"	v
 hex2rgba	libs/framework.js	/^function hex2rgba(color) {$/;"	f
 init	00_empty/main.js	/^function init(resources) {$/;"	f

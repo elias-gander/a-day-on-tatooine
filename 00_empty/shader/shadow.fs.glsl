@@ -25,7 +25,7 @@ struct Light {
 
 //illumination related variables
 uniform Material u_material;
-uniform Light u_light;
+uniform Light u_light;						// TODO implement multiple lights
 varying vec3 v_normalVec;
 varying vec3 v_eyeVec;
 varying vec3 v_lightVec;
@@ -68,6 +68,7 @@ vec4 calculateSimplePointLight(Light light, Material material, vec3 lightVec, ve
 	vec4 c_spec = clamp(spec * light.specular * material.specular, 0.0, 1.0);
 	vec4 c_em   = material.emission;
 
+	// TODO:
 	//Note: You can directly use the shadow related varying/uniform variables in this example since we only have 1 light source.
 	//Normally you should pass them to the calculateSimplePointLight function as parameters since they change for each light source!
 
