@@ -53,7 +53,7 @@ function createSceneGraph(resources) {
 
   let sphere = makeSphere();
   let sphereModelNode = new RenderSGNode(sphere);
-  let sphereTexNode = new AdvancedTextureSGNode(resources.tex);   // TODO sphere texture doesn't work - FIXED: enable texture by setting uniform u_enableObjectTexture
+  let sphereTexNode = new AdvancedTextureSGNode(resources.tex);
   let sphereMatNode = new MaterialSGNode();
   let sphereTranNode = new TransformationSGNode(glm.transform({translate: [0, 0, 0]}));
 
@@ -70,17 +70,16 @@ function createSceneGraph(resources) {
   let lightMatNode = new MaterialSGNode();
   let lightNode = new LightSGNode([0, 0, -15]);
 
-  let light2Sphere = makeSphere(0.5, 20, 20);
+  let light2Sphere = makeSphere(100, 20, 20);
   let light2ModelNode = new RenderSGNode(lightSphere);
-  let light2Node = new LightSGNode([-2, -5, -25]);
-  let light2ShaderNode = new ShaderSGNode(createProgram(gl, resources.whiteVs, resources.whiteFs));
+  let light2Node = new LightSGNode([500, -500, 500]);
 
   // test terrain generation from heightmap
-  let terrain = generateTerrain(resources.heightmap, 16, 16);
+  let terrain = generateTerrain(resources.heightmap, 16, 16, 120);
   let terrainModelNode = new RenderSGNode(terrain);
   let terrainTexNode = new AdvancedTextureSGNode(resources.sandTex);
   let terrainMatNode = new MaterialSGNode();
-  let terrainTranNode = new TransformationSGNode(glm.transform({translate: [100, 100, 100], rotateX: 270}));
+  let terrainTranNode = new TransformationSGNode(glm.transform({translate: [0, 100, 0]}));
 
   // show terrain
   terrainTranNode.append(terrainMatNode);
@@ -100,6 +99,7 @@ function createSceneGraph(resources) {
   rectTranNode.append(rectMatNode);
   rectMatNode.append(rectTexNode);
   rectTexNode.append(rectModelNode);
+  rectTexNode.append(enableTexNode);
   root.append(rectShaderNode);
 
   lightNode.append(lightMatNode);   // TODO applying a texture to lightnode changes it's position...why? - try without lightTex/enableTex nodes
@@ -108,9 +108,8 @@ function createSceneGraph(resources) {
   lightTexNode.append(sphereModelNode);
   root.append(lightNode);
 
-  light2ShaderNode.append(light2Node);
   light2Node.append(light2ModelNode);   // TODO how to skin a light node? even second light source to illuminate first does not make texture on first visible
-  root.append(light2ShaderNode);
+  root.append(light2Node);
 
   return root;
 }
@@ -119,8 +118,9 @@ function createSceneGraph(resources) {
  * builds up the scenegraph and returns the root node#
  * @param heightmap: a greyscale image where darker == lower and lighter == higher terrain
  * @param stepX|Y: how many pixels to skip in x|y direction when parsing the heightmap
+ * @param heightModifier: resulting height is [0, 1] * heightScaling
  */
-function generateTerrain(heightmap, stepX, stepY) {
+function generateTerrain(heightmap, stepX, stepY, heightScaling) {
   // TODO fix stepX|Y == 1 does not work! (incorrect triangle indices most likely)
 
   if(heightmap.width % stepX != 0 || heightmap.height % stepY != 0) {
@@ -145,7 +145,7 @@ function generateTerrain(heightmap, stepX, stepY) {
   // returns
   var vertices = [];
   var normal = [];
-  var texture = [];  // TODO set texture coordinates
+  var texture = [];  // TODO set texture coordinates properly?
   var index = [];
 
 
@@ -155,7 +155,7 @@ function generateTerrain(heightmap, stepX, stepY) {
   var y = 0, x = 0;
   var lastLine = false;
   while(y < heightmap.height) {
-    if(x >= heightmap.width * 4) {
+    if(x >= heightmap.width) {
       y += stepY;
       x = 0;
 
@@ -167,12 +167,12 @@ function generateTerrain(heightmap, stepX, stepY) {
     } else {
 
       var i = y * heightmap.width * 4 + x * 4;
-      var z = data[i];  // deduct z-Value [0, 1] from R-value of pixel (G and B-values in data[i+1..3] are assumed to be equal in greyscale heightmap!);
+      var z = data[i] / 255 * heightScaling;  // deduct z-Value [0, 1] from R-value of pixel (G and B-values in data[i+1..3] are assumed to be equal in greyscale heightmap!);
       //console.log(i + ": (" + data[i] + ", " + data[i+1] + ", " + data[i+2] + ", " + data[i+3] + ")");
       //console.log(z);
       // save vertex
-      vertices.push(x/4, y, z);
-      normal.push(0, 1, 0);     // TODO set normal vectors
+      vertices.push(x, -z, y);   // height of image is height (y) of terrain
+      normal.push(0, -1, 0);     // TODO set normal vectors
 
       // now the harder part: building triangles:
       // from every vertex start 2 triangles: type A = {i, i+1, i+meshWidth} and type B = {i, i+width, i+meshWidth-1}   (meshWidth == vertices in a line)
@@ -185,26 +185,26 @@ function generateTerrain(heightmap, stepX, stepY) {
           // push type B
           index.push(vertexIndex, vertexIndex + meshWidth, vertexIndex + meshWidth - 1);
           // add texture coordinates
-          texture.push( 1, 0,
-                        0, 1,
+          texture.push( 0, 0,
+                        1, 0,
                         1, 1);
         }
-        if(x < heightmap.width * 4 - 1) {
+        if(x < heightmap.width - 1) {
           // not last vertex in line
           // push type A
           index.push(vertexIndex, vertexIndex + 1, vertexIndex + meshWidth);
           // add texture coordinates
           texture.push( 0, 0,
                         0, 1,
-                        1, 0);
+                        1, 1);
         }
       }
 
       vertexIndex++;
-      x += stepX * 4;
+      x += stepX;
 
       // to always incorporate the last column of the heightmap into our mesh
-      if(x == heightmap.width * 4 && stepX != 1) {
+      if(x == heightmap.width && stepX != 1) {
         x--;
       }
     }
@@ -236,10 +236,11 @@ function render() {
   // free moving camera: http://gamedev.stackexchange.com/questions/43588/how-to-rotate-camera-centered-around-the-cameras-position
   // gl-matrix doc: http://glmatrix.net/docs/mat4.html
   // TODO fix camera problems: orientating camera when approaching [0,0,0] (test objects) or axes in general ... weird effects when using other field of view (30 would be default)
-  // where should the camera point
+  // where the camera should point
   let center = [camera.position.x + Math.cos(glm.deg2rad(camera.rotation.x)), camera.position.y + Math.sin(glm.deg2rad(camera.rotation.y)), camera.position.z + Math.cos(glm.deg2rad(camera.rotation.y)) + Math.sin(glm.deg2rad(camera.rotation.x))];
-  // camera orientation
-  let up = vec3.cross(vec3.create(), vec3.fromValues(center[0], center[1], center[2]), vec3.fromValues(-1, 0, 0));
+  // camera orientation//
+  let up = vec3.cross(vec3.create(), vec3.fromValues(center[0], center[1], center[2]), vec3.fromValues(-1, 0, 0));    // TODO fix pitch...up = [0, 1, 0] does not cause proper pitch, pitch using cross product has weird behaviour when crossing/approaching axes (flipping)
+  //let up = [0, 1, 0];
   // generate view matrix from position, center and up
   let lookAtMatrix = mat4.lookAt(mat4.create(), [camera.position.x, camera.position.y, camera.position.z], center, up);
   context.viewMatrix = lookAtMatrix;
@@ -249,7 +250,7 @@ function render() {
   camera.direction.y = lookAtMatrix[6];
   camera.direction.z = lookAtMatrix[10];
 
-  //console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
+  console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
 
   //render scenegraph
   root.render(context);
@@ -264,6 +265,7 @@ loadResources({
   vs: 'shader/shadow.vs.glsl',
   fs: 'shader/shadow.fs.glsl',
 
+  // test different shader
   whiteVs : 'shader/white.vs.glsl',
   whiteFs : 'shader/white.fs.glsl',
 
