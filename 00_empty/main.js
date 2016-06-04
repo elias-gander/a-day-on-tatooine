@@ -46,11 +46,10 @@ function init(resources) {
  * builds up the scenegraph and returns the root node
  */
 function createSceneGraph(resources) {
-  // camera test scene
   let root = new ShaderSGNode(program);
-
   let enableTexNode = new SetUniformSGNode('u_enableObjectTexture', true);
 
+  // --------------------- camera test scene ------------------------
   let sphere = makeSphere();
   let sphereModelNode = new RenderSGNode(sphere);
   let sphereTexNode = new AdvancedTextureSGNode(resources.tex);
@@ -73,6 +72,20 @@ function createSceneGraph(resources) {
   let light2Sphere = makeSphere(100, 20, 20);
   let light2ModelNode = new RenderSGNode(lightSphere);
   let light2Node = new LightSGNode([500, -500, 500]);
+  // --------------------- camera test scene ------------------------
+
+
+  // leia
+  let leia = resources.leia;
+  let leiaModelNode = new RenderSGNode(leia);
+  let leiaTexNode = new AdvancedTextureSGNode(resources.leiaTex);   // TODO putting a texture doesn't really work here (whole texture used for every triangle?)
+  let leiaMatNode = new MaterialSGNode();
+  let leiaTranNode = new TransformationSGNode(glm.transform({translate: [30, -5, 100], rotateX: 180}));
+
+  // sandcrawler
+  let sandcrawler = makeSandcrawler();
+
+
 
   // test terrain generation from heightmap
   let terrain = generateTerrain(resources.heightmap, 16, 16, 120);
@@ -87,6 +100,14 @@ function createSceneGraph(resources) {
   terrainTexNode.append(terrainModelNode);
   terrainTexNode.append(enableTexNode);
   root.append(terrainTranNode);
+
+  // show sandcrawler
+  // show leia
+  leiaTranNode.append(leiaMatNode);
+  leiaMatNode.append(leiaTexNode);
+  leiaTexNode.append(enableTexNode);
+  leiaTexNode.append(leiaModelNode);
+  root.append(leiaTranNode);
 
 
   sphereTranNode.append(sphereMatNode);
@@ -114,14 +135,89 @@ function createSceneGraph(resources) {
   return root;
 }
 
+function makeSandcrawler() {
+  var body = makeBody();
+  var crawlers;
+  var spotlights;
+
+
+  function makeBody() {
+    // returns
+    var vertices = [];
+    var normal = [];
+    var texture = [];
+    var index = [];
+
+    // back part of body is just a quad
+    vertices.push(
+      // side face
+      0,0,0,  //0
+      0,1,0,  //1
+      1,0,0,  //2
+      1,1,0,  //3
+
+      // top face
+      0,1,.5, //4
+      1,1,.5, //5
+
+      // other side face
+      0,0,.5, //6
+      0,1,.5 //7
+    );
+
+    // now triangles
+    index.push(
+      // side face
+      0,1,3,
+      0,2,3,
+
+      // top face
+      1,4,5,
+      1,3,5,
+
+      // other side face
+      4,5,6,
+      5,6,7,
+
+      // backface
+      0,1,6,
+      1,4,6
+    );
+
+    for(var i = 0; i < index.length; i += 3) {
+      var triangle = {p0: vec3.fromValues(vertices[3*index[i]], vertices[3*index[i]+1], vertices[3*index[i]+2]),
+                      p1: vec3.fromValues(vertices[3*index[i+1]], vertices[3*index[i+1]+1], vertices[3*index[i+1]+2]),
+                      p2: vec3.fromValues(vertices[3*index[i+2]], vertices[3*index[i+2]+1], vertices[3*index[i+2]+2])}
+
+      var u = vec3.subtract(vec3.create(), triangle.p1, triangle.p0);
+      var v = vec3.subtract(vec3.create(), triangle.p2, triangle.p0);
+
+
+      /*
+      Set Vector U to (Triangle.p2 minus Triangle.p1)
+    	Set Vector V to (Triangle.p3 minus Triangle.p1)
+
+    	Set Normal.x to (multiply U.y by V.z) minus (multiply U.z by V.y)
+    	Set Normal.y to (multiply U.z by V.x) minus (multiply U.x by V.z)
+    	Set Normal.z to (multiply U.x by V.y) minus (multiply U.y by V.x)
+
+    	Returning Normal
+      */
+
+    }
+
+
+  }
+}
+
 /**
- * builds up the scenegraph and returns the root node#
+ * builds up the scenegraph and returns the root node
  * @param heightmap: a greyscale image where darker == lower and lighter == higher terrain
- * @param stepX|Y: how many pixels to skip in x|y direction when parsing the heightmap
+ * @param stepX|Y: how many pixels to skip in x|y direction when parsing the heightmap (must divide heightmap width|height)
  * @param heightModifier: resulting height is [0, 1] * heightScaling
  */
 function generateTerrain(heightmap, stepX, stepY, heightScaling) {
-  // TODO fix stepX|Y == 1 does not work! (incorrect triangle indices most likely)
+  // TODO fix stepX|Y == (1,4,?) does not work! (incorrect triangle indices most likely)
 
   if(heightmap.width % stepX != 0 || heightmap.height % stepY != 0) {
     return null;
@@ -142,6 +238,8 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
   // ('data' is an array of RGBA pixel values for each pixel) ... 1 pixel is 4 sequential values in the array
   var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
+  // to calculate vertex normals later
+  var vertexTriangles = [];
   // returns
   var vertices = [];
   var normal = [];
@@ -172,7 +270,7 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
       //console.log(z);
       // save vertex
       vertices.push(x, -z, y);   // height of image is height (y) of terrain
-      normal.push(0, -1, 0);     // TODO set normal vectors
+      //normal.push(0, -1, 0);     // TODO set normal vectors
 
       // now the harder part: building triangles:
       // from every vertex start 2 triangles: type A = {i, i+1, i+meshWidth} and type B = {i, i+width, i+meshWidth-1}   (meshWidth == vertices in a line)
@@ -180,6 +278,7 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
       // this is because we build a plane and not something voluminous
       if(!lastLine) {
         // not in last line
+
         if(x > 0) {
           // not first vertex in line
           // push type B
@@ -188,7 +287,21 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
           texture.push( 0, 0,
                         1, 0,
                         1, 1);
+          // keep track of all triangles adjacent to a vertex to compute normals later
+          if(!vertexTriangles[vertexIndex]) {
+            vertexTriangles[vertexIndex] = [];
+          }
+          vertexTriangles[vertexIndex].push(vertexIndex, vertexIndex + meshWidth, vertexIndex + meshWidth - 1);
+          if(!vertexTriangles[vertexIndex+meshWidth]) {
+            vertexTriangles[vertexIndex+meshWidth] = [];
+          }
+          vertexTriangles[vertexIndex+meshWidth].push(vertexIndex, vertexIndex + meshWidth, vertexIndex + meshWidth - 1);
+          if(!vertexTriangles[vertexIndex+meshWidth-1]) {
+            vertexTriangles[vertexIndex+meshWidth-1] = [];
+          }
+          vertexTriangles[vertexIndex+meshWidth-1].push(vertexIndex, vertexIndex + meshWidth, vertexIndex + meshWidth - 1);
         }
+
         if(x < heightmap.width - 1) {
           // not last vertex in line
           // push type A
@@ -197,6 +310,19 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
           texture.push( 0, 0,
                         0, 1,
                         1, 1);
+          // keep track of all triangles adjacent to a vertex to compute normals later
+          if(!vertexTriangles[vertexIndex]) {
+            vertexTriangles[vertexIndex] = [];
+          }
+          vertexTriangles[vertexIndex].push(vertexIndex, vertexIndex + meshWidth, vertexIndex + meshWidth - 1);
+          if(!vertexTriangles[vertexIndex+meshWidth]) {
+            vertexTriangles[vertexIndex+meshWidth] = [];
+          }
+          vertexTriangles[vertexIndex+meshWidth].push(vertexIndex, vertexIndex + meshWidth, vertexIndex + meshWidth - 1);
+          if(!vertexTriangles[vertexIndex+meshWidth-1]) {
+            vertexTriangles[vertexIndex+meshWidth-1] = [];
+          }
+          vertexTriangles[vertexIndex+meshWidth-1].push(vertexIndex, vertexIndex + meshWidth, vertexIndex + meshWidth - 1);
         }
       }
 
@@ -209,6 +335,34 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
       }
     }
   }
+
+  // calculate the normal vector of every vertex by weighting in the surface normals of all adjacent triangles!
+  // TODO some outer vertices still have flipped normals but I don't know how to detect them :S
+  vertexTriangles.forEach(function(adjacentTriangles) {
+    var sum = vec3.create();
+
+    for(var i = 0; i < adjacentTriangles.length; i += 3) { // a triangle consists of 3 vertices
+      var p0 = vec3.fromValues(vertices[3*adjacentTriangles[i]], vertices[3*adjacentTriangles[i]+1], vertices[3*adjacentTriangles[i]+2]);
+      var p1 = vec3.fromValues(vertices[3*adjacentTriangles[i+1]], vertices[3*adjacentTriangles[i+1]+1], vertices[3*adjacentTriangles[i+1]+2]);
+      var p2 = vec3.fromValues(vertices[3*adjacentTriangles[i+2]], vertices[3*adjacentTriangles[i+2]+1], vertices[3*adjacentTriangles[i+2]+2]);
+
+      // calculate surface normal of triangle as cross product of two lines of the triangle
+      var surfaceNormal = vec3.cross(vec3.create(), vec3.subtract(vec3.create(), p0, p1), vec3.subtract(vec3.create(), p0, p2));
+      // TODO dirty fix: if surface normal has negative y component, it's pointing the wrong direction
+      if(surfaceNormal[1] > 0) {
+        vec3.inverse(surfaceNormal, surfaceNormal);
+      }
+
+      // sum up all surface normals
+      vec3.add(sum, sum, surfaceNormal);
+    }
+
+    // and normalize the sum
+    vec3.normalize(sum, sum);
+
+    // we now have the normal vector of one vertex!
+    normal.push(sum[0], sum[1], sum[2]);
+  });
 
   return {
     position: vertices,
@@ -250,7 +404,7 @@ function render() {
   camera.direction.y = lookAtMatrix[6];
   camera.direction.z = lookAtMatrix[10];
 
-  console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
+  //console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
 
   //render scenegraph
   root.render(context);
@@ -273,7 +427,11 @@ loadResources({
   heightmap: 'assets/terrain/heightmap.png',
   tex: 'assets/lava.jpg',
   sunTex: 'assets/sun.jpg',
-  sandTex: 'assets/sand.jpg'
+  sandTex: 'assets/sand.jpg',
+
+  // models
+  leia: 'assets/models/leia/Leia/Leia.obj',
+  leiaTex: 'assets/models/leia/Leia/Leia Textures/Leia_Diff.png'
 
 }).then(function (resources /*an object containing our keys with the loaded resources*/) {
   init(resources);

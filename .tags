@@ -24,6 +24,8 @@ loadResources.isImageUrl	libs/framework.js	/^  function isImageUrl(url) {$/;"	f
 loadResources.isModelUrl	libs/framework.js	/^  function isModelUrl(url) {$/;"	f
 loadResources.isObjUrl	libs/framework.js	/^  function isObjUrl(url) {$/;"	f
 makeRect	libs/framework.js	/^function makeRect(width, height) {$/;"	f
+makeSandcrawler	00_empty/main.js	/^function makeSandcrawler() {$/;"	f
+makeSandcrawler.makeBody	00_empty/main.js	/^  function makeBody() {$/;"	f
 makeSphere	libs/framework.js	/^function makeSphere(radius, latitudeBands, longitudeBands) {$/;"	f
 modelRenderer	libs/framework.js	/^function modelRenderer(model) {$/;"	f
 modelRenderer.init	libs/framework.js	/^  function init(gl) {$/;"	f
@@ -44,3 +46,4 @@ sg.shader	libs/framework.js	/^  },$/;"	m
 sg.transform	libs/framework.js	/^  },$/;"	m
 sg.translate	libs/framework.js	/^  },$/;"	m
 toPos	00_empty/main.js	/^  function toPos(event) {$/;"	f
+var.triangle.p0	00_empty/main.js	/^      var triangle = {p0: vec3.fromValues(vertices[3*index[i]], vertices[3*index[i]+1], vertices[3*index[i]+2]),$/;"	p
