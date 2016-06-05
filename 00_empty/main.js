@@ -83,8 +83,16 @@ function createSceneGraph(resources) {
   let leiaTranNode = new TransformationSGNode(glm.transform({translate: [100, -5, -100], rotateX: 180}));
 
   // sandcrawler
-  let sandcrawler = makeSandcrawler();
-
+  // TODO add spotlight to sandcrawler graph, to implement spotlights in a shader: www.tomdalling.com/blog/modern-opengl/08-even-more-lighting-directional-lights-spotlights-multiple-lights/
+  let sandcrawlerBody = makeSandcrawlerBody();
+  let sandcrawlerCrawlers = makeCrawlerQuad(1, 0.1, 0.5);
+  let sandcrawlerBodyModelNode = new RenderSGNode(sandcrawlerBody);
+  let sandcrawlerCrawlersModelNode = new RenderSGNode(sandcrawlerCrawlers);
+  let sandcrawlerBodyTexNode = new AdvancedTextureSGNode(resources.rustyMetalTex);
+  let sandcrawlerCrawlersTexNode = new AdvancedTextureSGNode(resources.crawlersTex);
+  let sandcrawlerCrawlersTranNode = new TransformationSGNode(glm.transform({translate: [0, -0.1, 0]}));
+  let sandcrawlerMatNode = new MaterialSGNode();
+  let sandcrawlerTranNode = new TransformationSGNode(glm.transform({translate: [500, -50, 500], rotateX: 180, scale: 200}));
 
 
   // test terrain generation from heightmap
@@ -102,6 +110,15 @@ function createSceneGraph(resources) {
   root.append(terrainTranNode);
 
   // show sandcrawler
+  sandcrawlerTranNode.append(sandcrawlerMatNode);
+  sandcrawlerMatNode.append(sandcrawlerBodyTexNode);
+  sandcrawlerMatNode.append(sandcrawlerCrawlersTranNode);
+  sandcrawlerMatNode.append(enableTexNode);
+  sandcrawlerCrawlersTranNode.append(sandcrawlerCrawlersTexNode)
+  sandcrawlerCrawlersTexNode.append(sandcrawlerCrawlersModelNode);
+  sandcrawlerBodyTexNode.append(sandcrawlerBodyModelNode);
+  root.append(sandcrawlerTranNode);
+
   // show leia
   leiaTranNode.append(leiaMatNode);
   leiaMatNode.append(leiaTexNode);
@@ -135,83 +152,237 @@ function createSceneGraph(resources) {
   return root;
 }
 
-function makeSandcrawler() {
-  var body = makeBody();
-  var crawlers;
-  var spotlights;
+/**
+  * returns a (manually composed) sandcrawler body
+  */
+function makeSandcrawlerBody() {
+  // TODO texture coodinates and... actually find a texture to use!
+  // TODO spotlights..?
+  // TODO put crawlers as own scenegraph node(...composed model) and use an extern model for that
+
+  // returns
+  var vertices = [];
+  var normal = [];
+  var texture = [];
+  var index = [];
+
+  // every plane of the model has it's one vertices because for hard edges we want multiple normal vectors for a vertex!
+  // back part of body is just a quad
+  vertices.push(
+    // side face
+    0,0,0,  //0
+    0,.75,0,  //1
+    1,0,0,  //2
+    1,.75,0,  //3
+    // top face
+    0,.75,0,  //4
+    1,.75,0,  //5
+    0,.75,.5, //6
+    1,.75,.5, //7
+    // other side face
+    0,.75,.5, //8
+    1,.75,.5, //9
+    0,0,.5, //10
+    1,0,.5, //11
+    // backface
+    0,0,0, //12
+    0,.75,0, //13
+    0,0,.5, //14
+    0,.75,.5 //15
+  );
+
+  // front part of body ... trapezes
+  vertices.push(
+    // side face
+    1,0,0, //16
+    1,.75,0, //17
+    1.6,.5,.1, //18
+    1.6,.75,.1, //19
+    // top face
+    1,.75,0, //20
+    1,.75,.5, //21
+    1.6,.75,.1, //22
+    1.6,.75,.4,   //23
+    // other side face
+    1,0,.5, //24
+    1,.75,.5, //25
+    1.6,.5,.4,  //26
+    1.6,.75,.4, //27
+    // top front face
+    1.6,.5,.1, //28
+    1.6,.75,.1, //29
+    1.6,.5,.4, //30
+    1.6,.75,.4, //31
+    // bottom front face
+    1,0,0, //32
+    1.6,.5,.1, //33
+    1,0,.5, //34
+    1.6,.5,.4 //35
+  )
+
+  // now triangles
+  index.push(
+    // side face
+    0,1,3,
+    0,2,3,
+    // top face
+    4,6,7,
+    7,5,4,
+    // other side face
+    8,9,10,
+    10,11,9,
+    // backface
+    12,13,15,
+    15,14,12
+  );
+
+  // now triangles again
+  index.push(
+    // side face
+    16,17,19,
+    19,18,16,
+    // top face
+    20,21,23,
+    23,22,20,
+    // other side face
+    24,25,27,
+    27,26,24,
+    // top front face
+    28,29,31,
+    31,30,28,
+    // bottom front face
+    32,33,35,
+    35,34,32
+  )
+
+  // now build vertex - triangle datastructure to automatically compute normals
+  var vertexTriangles = [];
+  // back part
+  vertexTriangles.push([0,1,3,  0,2,3]);
+  vertexTriangles.push([0,1,3]);
+  vertexTriangles.push([0,2,3]);
+  vertexTriangles.push([0,1,3,  0,2,3]);
+
+  vertexTriangles.push([4,6,7,  7,5,4]);
+  vertexTriangles.push([7,5,4]);
+  vertexTriangles.push([4,6,7]);
+  vertexTriangles.push([4,6,7,  7,5,4]);
+
+  vertexTriangles.push([8,9,10]);
+  vertexTriangles.push([8,9,10,  10,11,9]);
+  vertexTriangles.push([8,9,10,  10,11,9]);
+  vertexTriangles.push([10,11,9]);
+
+  vertexTriangles.push([12,13,15,  15,14,12]);
+  vertexTriangles.push([12,13,15]);
+  vertexTriangles.push([15,14,12]);
+  vertexTriangles.push([12,13,15,  15,14,12]);
+
+  vertexTriangles.push([16,17,19,  19,18,16]);
+  vertexTriangles.push([16,17,19]);
+  vertexTriangles.push([19,18,16]);
+  vertexTriangles.push([16,17,19,  19,18,16]);
+
+  vertexTriangles.push([20,21,23,  23,22,20]);
+  vertexTriangles.push([20,21,23]);
+  vertexTriangles.push([23,22,20]);
+  vertexTriangles.push([20,21,23,  23,22,20]);
+
+  vertexTriangles.push([24,25,27,  27,26,24]);
+  vertexTriangles.push([24,25,27]);
+  vertexTriangles.push([27,26,24]);
+  vertexTriangles.push([24,25,27,  27,26,24]);
+
+  vertexTriangles.push([28,29,31, 31,30,28]);
+  vertexTriangles.push([28,29,31]);
+  vertexTriangles.push([31,30,28]);
+  vertexTriangles.push([28,29,31,  31,30,28]);
+
+  vertexTriangles.push([32,33,35,  35,34,32]);
+  vertexTriangles.push([32,33,35]);
+  vertexTriangles.push([35,34,32]);
+  vertexTriangles.push([32,33,35,  35,34,32]);
+
+  calculateNormals(vertexTriangles, vertices, normal, false);
 
 
-  function makeBody() {
-    // returns
-    var vertices = [];
-    var normal = [];
-    var texture = [];
-    var index = [];
-
-    // back part of body is just a quad
-    vertices.push(
-      // side face
-      0,0,0,  //0
-      0,1,0,  //1
-      1,0,0,  //2
-      1,1,0,  //3
-
-      // top face
-      0,1,.5, //4
-      1,1,.5, //5
-
-      // other side face
-      0,0,.5, //6
-      0,1,.5 //7
-    );
-
-    // now triangles
-    index.push(
-      // side face
-      0,1,3,
-      0,2,3,
-
-      // top face
-      1,4,5,
-      1,3,5,
-
-      // other side face
-      4,5,6,
-      5,6,7,
-
-      // backface
-      0,1,6,
-      1,4,6
-    );
-
-    for(var i = 0; i < index.length; i += 3) {
-      var triangle = {p0: vec3.fromValues(vertices[3*index[i]], vertices[3*index[i]+1], vertices[3*index[i]+2]),
-                      p1: vec3.fromValues(vertices[3*index[i+1]], vertices[3*index[i+1]+1], vertices[3*index[i+1]+2]),
-                      p2: vec3.fromValues(vertices[3*index[i+2]], vertices[3*index[i+2]+1], vertices[3*index[i+2]+2])}
-
-      var u = vec3.subtract(vec3.create(), triangle.p1, triangle.p0);
-      var v = vec3.subtract(vec3.create(), triangle.p2, triangle.p0);
-
-
-      /*
-      Set Vector U to (Triangle.p2 minus Triangle.p1)
-    	Set Vector V to (Triangle.p3 minus Triangle.p1)
-
-    	Set Normal.x to (multiply U.y by V.z) minus (multiply U.z by V.y)
-    	Set Normal.y to (multiply U.z by V.x) minus (multiply U.x by V.z)
-    	Set Normal.z to (multiply U.x by V.y) minus (multiply U.y by V.x)
-
-    	Returning Normal
-      */
-
-    }
-
-
+  // TODO right now just putting some random texture coords
+  for(var i = 0; i < index.length / 3; i++) {
+    texture.push(0,0, 1,0, 0,1);
   }
+
+  return {
+    position: vertices,
+    normal: normal,
+    texture: texture,
+    index: index
+  };
+}
+
+
+/**
+  * Returns the model of a quad with given dimensions and texture coordinates for crawler texture
+  * @param w: width
+  * @param h: height
+  * @param d: depth
+  */
+function makeCrawlerQuad(w, h, d) {
+
+  // returns
+  var vertices = [];
+  var normal = [];
+  var texture = [];
+  var index = [];
+
+  vertices.push(
+    0,0,0,
+    w,0,0,
+    0,h,0,
+    w,h,0,
+    0,0,d,
+    w,0,d,
+    0,h,d,
+    w,h,d
+  )
+
+  index.push(
+    0,2,3,  3,1,0,
+    0,2,6,  6,4,0,
+    1,3,7,  7,5,1,
+    0,4,5,  5,1,0,
+    4,6,7,  7,5,4
+  )
+
+  texture.push(
+    0,0, 0,.5, 1,.5,  0,0, 1,0, 1,.5,   // crawlers side view
+    0,.5, 0,1, 1,1,  0,.5, 1,.5, 1,1,
+    0,.5, 0,1, 1,1,  0,.5, 1,.5, 1,1,
+    0,.5, 0,1, 1,1,  0,.5, 1,.5, 1,1,
+    0,0, 0,.5, 1,.5,  0,0, 1,0, 1,.5    // crawlers side view
+  )
+
+  var vertexTriangles = [];
+  vertexTriangles.push([0,2,3,  3,1,0,  0,2,6,  6,4,0, 0,4,5,  5,1,0]);
+  vertexTriangles.push([3,1,0,  1,3,7,  7,5,1,  5,1,0]);
+  vertexTriangles.push([0,2,3,  0,2,6]);
+  vertexTriangles.push([0,2,3,  3,1,0,  1,3,7]);
+  vertexTriangles.push([6,4,0,  0,4,5,  4,6,7,  7,5,4]);
+  vertexTriangles.push([7,5,1,  0,4,5,  5,1,0,  7,5,4]);
+  vertexTriangles.push([7,5,1,  0,4,5,  5,1,0,  7,5,4]);
+  vertexTriangles.push([1,3,7,  7,5,1,  4,6,7,  7,5,4]);
+
+  calculateNormals(vertexTriangles, vertices, normal, false);
+
+  return {
+    position: vertices,
+    normal: normal,
+    texture: texture,
+    index: index
+  };
 }
 
 /**
- * builds up the scenegraph and returns the root node
+ * generates a planar terrain model generated from a given heightmap
  * @param heightmap: a greyscale image where darker == lower and lighter == higher terrain
  * @param stepX|Y: how many pixels to skip in x|y direction when parsing the heightmap (must divide heightmap width|height)
  * @param heightModifier: resulting height is [0, 1] * heightScaling
@@ -270,7 +441,6 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
       //console.log(z);
       // save vertex
       vertices.push(x, -z, y);   // height of image is height (y) of terrain
-      //normal.push(0, -1, 0);     // TODO set normal vectors
 
       // now the harder part: building triangles:
       // from every vertex start 2 triangles: type A = {i, i+1, i+meshWidth} and type B = {i, i+width, i+meshWidth-1}   (meshWidth == vertices in a line)
@@ -336,8 +506,27 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
     }
   }
 
-  // calculate the normal vector of every vertex by weighting in the surface normals of all adjacent triangles!
-  // TODO some outer vertices still have flipped normals but I don't know how to detect them :S
+  // calculate terrain normals
+  calculateNormals(vertexTriangles, vertices, normal, true);
+
+  return {
+    position: vertices,
+    normal: normal,
+    texture: texture,
+    index: index
+  };
+}
+
+/**
+ * calculates the normal vector of every vertex by weighting in the surface normals of all adjacent triangles!
+ * @param: vertexTriangles: two-dimensional array that contains triangles in form of vertex indices in the vertices parameter such that: vertexTriangles[123] == triangles adjacent to vertices[123]
+ * @param: vertices: array of vertices where 3 sequential numbers constitute a vertex
+ * @param: normal: the array where normals should be pushed into
+ * @param: forcePointUpwards: if true, normals with a negative y component are inverted
+ */
+function calculateNormals(vertexTriangles, vertices, normal, forcePointUpwards) {
+  // TODO some outer vertices still have flipped normals but I don't know how to detect them (or no normals at all?)
+  // TODO remove dirty fix for terrain (wouldn't work for non planar models - vertexTriangles datastructure must have triangles ordered in a constant way (clockwise/counterclockwise))
   vertexTriangles.forEach(function(adjacentTriangles) {
     var sum = vec3.create();
 
@@ -349,11 +538,13 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
       // calculate surface normal of triangle as cross product of two lines of the triangle
       var surfaceNormal = vec3.cross(vec3.create(), vec3.subtract(vec3.create(), p0, p1), vec3.subtract(vec3.create(), p0, p2));
       // TODO dirty fix: if surface normal has negative y component, it's pointing the wrong direction
-      if(surfaceNormal[1] > 0) {
+      if(forcePointUpwards && surfaceNormal[1] > 0) {
         vec3.inverse(surfaceNormal, surfaceNormal);
       }
 
       // sum up all surface normals
+      // note that the magnitude of the just calculated surface normal is directly proportional to the area of it's triangle
+      // thus summing up all surface normals and normalizing the sum is essentially weighting in surface normals according to the area of their triangles
       vec3.add(sum, sum, surfaceNormal);
     }
 
@@ -363,13 +554,6 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
     // we now have the normal vector of one vertex!
     normal.push(sum[0], sum[1], sum[2]);
   });
-
-  return {
-    position: vertices,
-    normal: normal,
-    texture: texture,
-    index: index
-  };
 }
 
 /**
@@ -428,7 +612,9 @@ loadResources({
 
   // models
   leia: 'assets/models/leia/Leia/Leia.obj',
-  leiaTex: 'assets/models/leia/Leia/Leia Textures/Leia_Diff.png'
+  leiaTex: 'assets/models/leia/Leia/Leia Textures/Leia_Diff.png',
+  rustyMetalTex: 'assets/rusty_metal.jpg',
+  crawlersTex: 'assets/crawlers.jpg'
 
 }).then(function (resources /*an object containing our keys with the loaded resources*/) {
   init(resources);
