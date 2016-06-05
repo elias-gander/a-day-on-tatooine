@@ -80,7 +80,7 @@ function createSceneGraph(resources) {
   let leiaModelNode = new RenderSGNode(leia);
   let leiaTexNode = new AdvancedTextureSGNode(resources.leiaTex);   // TODO putting a texture doesn't really work here (whole texture used for every triangle?)
   let leiaMatNode = new MaterialSGNode();
-  let leiaTranNode = new TransformationSGNode(glm.transform({translate: [30, -5, 100], rotateX: 180}));
+  let leiaTranNode = new TransformationSGNode(glm.transform({translate: [100, -5, -100], rotateX: 180}));
 
   // sandcrawler
   let sandcrawler = makeSandcrawler();
@@ -387,14 +387,11 @@ function render() {
   // TODO which Field of view/other parameters?
   context.projectionMatrix = mat4.perspective(mat4.create(), 50, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.01, 10000);
 
-  // free moving camera: http://gamedev.stackexchange.com/questions/43588/how-to-rotate-camera-centered-around-the-cameras-position
+  // free moving camera: https://sidvind.com/wiki/Yaw,_pitch,_roll_camera
   // gl-matrix doc: http://glmatrix.net/docs/mat4.html
-  // TODO fix camera problems: orientating camera when approaching [0,0,0] (test objects) or axes in general ... weird effects when using other field of view (30 would be default)
-  // where the camera should point
-  let center = [camera.position.x + Math.cos(glm.deg2rad(camera.rotation.x)), camera.position.y + Math.sin(glm.deg2rad(camera.rotation.y)), camera.position.z + Math.cos(glm.deg2rad(camera.rotation.y)) + Math.sin(glm.deg2rad(camera.rotation.x))];
-  // camera orientation//
-  let up = vec3.cross(vec3.create(), vec3.fromValues(center[0], center[1], center[2]), vec3.fromValues(-1, 0, 0));    // TODO fix pitch...up = [0, 1, 0] does not cause proper pitch, pitch using cross product has weird behaviour when crossing/approaching axes (flipping)
-  //let up = [0, 1, 0];
+  let center = [camera.position.x + Math.cos(camera.rotation.x) * Math.sin(camera.rotation.y), camera.position.y + Math.cos(camera.rotation.y), camera.position.z + Math.sin(camera.rotation.y) * Math.sin(camera.rotation.x)];
+  // camera orientation
+  let up = [0, 1, 0];
   // generate view matrix from position, center and up
   let lookAtMatrix = mat4.lookAt(mat4.create(), [camera.position.x, camera.position.y, camera.position.z], center, up);
   context.viewMatrix = lookAtMatrix;
@@ -463,8 +460,8 @@ function initInteraction(canvas) {
     const delta = { x : mouse.pos.x - pos.x, y: mouse.pos.y - pos.y };
     if (mouse.leftButtonDown) {
       //add the relative movement of the mouse to the rotation variables
-  		camera.rotation.x -= delta.x / 10;
-  		camera.rotation.y += delta.y / 10;
+  		camera.rotation.x -= delta.x / 1000;
+  		camera.rotation.y -= delta.y / 1000;
     }
     mouse.pos = pos;
   });
