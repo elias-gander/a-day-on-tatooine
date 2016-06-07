@@ -3,8 +3,6 @@
 // It shows the basic priciples in a simple way and is sufficient for our lab exercises.
 precision mediump float;
 
-#define MAX_LIGHTS 10
-
 /**
  * definition of a material structure containing common properties
  */
@@ -23,17 +21,14 @@ struct Light {
 	vec4 ambient;
 	vec4 diffuse;
 	vec4 specular;
-	// allow spotlights
-	float coneAngle;
-	float coneDirection;
 };
 
 //illumination related variables
 uniform Material u_material;
-uniform Light u_light[MAX_LIGHTS];						// TODO implement multiple lights... it's kinda working but not sure if correct
+uniform Light u_light;						// TODO implement multiple lights
 varying vec3 v_normalVec;
 varying vec3 v_eyeVec;
-varying vec3 v_lightVec[MAX_LIGHTS];
+varying vec3 v_lightVec;
 
 //texture related variables
 uniform bool u_enableObjectTexture;
@@ -45,10 +40,10 @@ uniform float u_shadowMapWidth;
 uniform float u_shadowMapHeight;
 
 //shadow related variables
-varying vec4 v_shadowMapTexCoord[MAX_LIGHTS];
+varying vec4 v_shadowMapTexCoord;
 uniform sampler2D u_depthMap;
 
-vec4 calculateSimplePointLight(Light light, Material material, vec3 lightVec, vec3 normalVec, vec3 eyeVec, vec4 textureColor, vec4 shadowMapTexCoord) {
+vec4 calculateSimplePointLight(Light light, Material material, vec3 lightVec, vec3 normalVec, vec3 eyeVec, vec4 textureColor) {
 	lightVec = normalize(lightVec);
 	normalVec = normalize(normalVec);
 	eyeVec = normalize(eyeVec);
@@ -78,7 +73,7 @@ vec4 calculateSimplePointLight(Light light, Material material, vec3 lightVec, ve
 	//Normally you should pass them to the calculateSimplePointLight function as parameters since they change for each light source!
 
   //TASK 2.3: apply perspective division to v_shadowMapTexCoord and save to shadowMapTexCoord3D
-  vec3 shadowMapTexCoord3D = shadowMapTexCoord.xyz/shadowMapTexCoord.w; //do perspective division
+  vec3 shadowMapTexCoord3D = v_shadowMapTexCoord.xyz/v_shadowMapTexCoord.w; //do perspective division
 	//vec3 shadowMapTexCoord3D = vec3(0,0,0);
 
 	//do texture space transformation (-1 to 1 -> 0 to 1)
@@ -121,9 +116,6 @@ void main (void) {
     textureColor = texture2D(u_tex,v_texCoord);
   }
 
-	for(int i = 0; i < MAX_LIGHTS; i++) {
-		// if spotlight (coneangle != 360) then we only apply it's lighting, when ... TODO implement spotlights (http://www.tomdalling.com/blog/modern-opengl/08-even-more-lighting-directional-lights-spotlights-multiple-lights/#spotlights)
-		gl_FragColor += calculateSimplePointLight(u_light[i], u_material, v_lightVec[i], v_normalVec, v_eyeVec, textureColor, v_shadowMapTexCoord[i]);
-	}
+	gl_FragColor = calculateSimplePointLight(u_light, u_material, v_lightVec, v_normalVec, v_eyeVec, textureColor);
 
 }

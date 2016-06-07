@@ -907,14 +907,14 @@ class MaterialSGNode extends SGNode {
  */
 class LightSGNode extends TransformationSGNode {
 
-  constructor(position, children) {
+  constructor(position, nthLightNode, children) {
     super(children);
     this.position = position || [0, 0, 0];
     this.ambient = [0, 0, 0, 1];
     this.diffuse = [1, 1, 1, 1];
     this.specular = [1, 1, 1, 1];
     //uniform name
-    this.uniform = 'u_light';
+    this.uniform = 'u_light[' + nthLightNode + ']';
 
     this._worldPosition = null;
   }

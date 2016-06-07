@@ -4,8 +4,9 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
-calculateNormals	00_empty/main.js	/^function calculateNormals(vertexTriangles, vertices, normal, forcePointUpwards) {$/;"	f
+calculateNormals	00_empty/main.js	/^function calculateNormals(vertexTriangles, vertices, normal, flip) {$/;"	f
 checkForWindowResize	libs/framework.js	/^function checkForWindowResize(gl) {$/;"	f
+composeCrawlerQuad	00_empty/main.js	/^function composeCrawlerQuad(resources) {$/;"	f
 const.pos	00_empty/main.js	/^  const mouse = {$/;"	p
 const.rotation	00_empty/main.js	/^const camera = {$/;"	p
 createContext	libs/framework.js	/^function createContext(width, height) {$/;"	f
@@ -24,7 +25,6 @@ loadResources	libs/framework.js	/^function loadResources(resources, callback) {$
 loadResources.isImageUrl	libs/framework.js	/^  function isImageUrl(url) {$/;"	f
 loadResources.isModelUrl	libs/framework.js	/^  function isModelUrl(url) {$/;"	f
 loadResources.isObjUrl	libs/framework.js	/^  function isObjUrl(url) {$/;"	f
-makeCrawlerQuad	00_empty/main.js	/^function makeCrawlerQuad(w, h, d) {$/;"	f
 makeRect	libs/framework.js	/^function makeRect(width, height) {$/;"	f
 makeSandcrawlerBody	00_empty/main.js	/^function makeSandcrawlerBody() {$/;"	f
 makeSphere	libs/framework.js	/^function makeSphere(radius, latitudeBands, longitudeBands) {$/;"	f
