@@ -21,6 +21,8 @@ init	00_empty/main.js	/^function init(resources) {$/;"	f
 initInteraction	00_empty/main.js	/^function initInteraction(canvas) {$/;"	f
 isValidAttributeLocation	libs/framework.js	/^function isValidAttributeLocation(loc) {$/;"	f
 isValidUniformLocation	libs/framework.js	/^function isValidUniformLocation(loc) {$/;"	f
+light2TranNode	00_empty/main.js	/^var light2TranNode;$/;"	v
+light2TranY	00_empty/main.js	/^var light2TranY = 0;$/;"	v
 loadResources	libs/framework.js	/^function loadResources(resources, callback) {$/;"	f
 loadResources.isImageUrl	libs/framework.js	/^  function isImageUrl(url) {$/;"	f
 loadResources.isModelUrl	libs/framework.js	/^  function isModelUrl(url) {$/;"	f

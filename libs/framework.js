@@ -906,16 +906,16 @@ class MaterialSGNode extends SGNode {
  * the light position will be transformed according to the current model view matrix
  */
 class LightSGNode extends TransformationSGNode {
+  // TODO don't change framework ....... (new modified light node needed)
 
-  constructor(position, nthLightNode, children) {
+  constructor(position, children) {
     super(children);
     this.position = position || [0, 0, 0];
     this.ambient = [0, 0, 0, 1];
     this.diffuse = [1, 1, 1, 1];
     this.specular = [1, 1, 1, 1];
     //uniform name
-    this.uniform = 'u_light[' + nthLightNode + ']';
-
+    this.uniform = 'u_light';
     this._worldPosition = null;
   }
 

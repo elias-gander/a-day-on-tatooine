@@ -23,6 +23,8 @@ const camera = {
 
 // scenegraph
 var root = null;
+var light2TranNode;
+var light2TranY = 0;
 
 /**
  * initializes OpenGL context, compile shader, and load buffers
@@ -67,18 +69,13 @@ function createSceneGraph(resources) {
   let lightModelNode = new RenderSGNode(lightSphere);
   let lightTexNode = new AdvancedTextureSGNode(resources.sunTex);
   let lightMatNode = new MaterialSGNode();
-  let lightNode = new LightSGNode([0, 0, -15], 0);
+  let lightNode = new MyLightNode([300, -150, 300], 0, 30, [1,1,1]);
 
-  let light2Sphere = makeSphere(100, 20, 20);
-  let light2ModelNode = new RenderSGNode(lightSphere);
-  let light2Node = new LightSGNode([500, -500, 500], 1);
+  let light2Sphere = makeSphere(20, 20, 20);
+  let light2ModelNode = new RenderSGNode(light2Sphere);
+  let light2Node = new MyLightNode([1000, -500, 1000], 1, 180, [0,1,0]);
+  light2TranNode = new TransformationSGNode(glm.transform({}));
   // --------------------- camera test scene ------------------------
-
-
-  // volleyball
-  root.append(new TransformationSGNode(glm.transform({translate: [50, -50, -50]}), [enableTexNode,
-              new AdvancedTextureSGNode(resources.wilsonTex,
-              new RenderSGNode(volley = makeSphere()))]));
 
   // leia
   let leia = resources.leia;
@@ -88,7 +85,9 @@ function createSceneGraph(resources) {
   let leiaTranNode = new TransformationSGNode(glm.transform({translate: [100, -5, -100], rotateX: 180}));
 
   // sandcrawler
-  // TODO add spotlight to sandcrawler graph, to implement spotlights
+  // TODO add spotlight to sandcrawler graph
+  // TODO must animate one part separately from rest of model....slide out and rotate platform from between body and crawlers (as some kind of stair...put opening with jawas onto lower body as texture)
+  // TODO find crawler texture
   let sandcrawlerBody = makeSandcrawlerBody();
   let sandcrawlerCrawlersNode = composeCrawlerQuad(resources);
   let sandcrawlerBodyModelNode = new RenderSGNode(sandcrawlerBody);
@@ -149,6 +148,8 @@ function createSceneGraph(resources) {
   root.append(lightNode);
 
   light2Node.append(light2ModelNode);   // TODO how to skin a light node? even second light source to illuminate first does not make texture on first visible
+  light2TranNode.append(light2Node);
+  //root.append(light2TranNode);
   root.append(light2Node);
 
   return root;
@@ -160,6 +161,7 @@ function createSceneGraph(resources) {
 function makeSandcrawlerBody() {
   // TODO texture coodinates and... actually find a texture to use!
   // TODO spotlights..?
+  // TODO weird flickering...z-buffer fighting?
 
   // returns
   var vertices = [];
@@ -564,6 +566,9 @@ function render() {
 
   //console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
 
+  light2TranY += 0.5;
+  light2TranNode.matrix = glm.transform({translate: [0, light2TranY, 0], rotateY: light2TranY/10});
+
   //render scenegraph
   root.render(context);
 
@@ -629,7 +634,7 @@ function initInteraction(canvas) {
     if (mouse.leftButtonDown) {
       //add the relative movement of the mouse to the rotation variables
   		camera.rotation.x -= delta.x / 1000;
-  		camera.rotation.y -= delta.y / 1000;
+  		camera.rotation.y += delta.y / 1000;
     }
     mouse.pos = pos;
   });
@@ -660,4 +665,82 @@ function initInteraction(canvas) {
       camera.position.z += camera.direction.z * camera.speed;
     }
   })
+}
+
+/**
+  * extended light node implementation - supports multiple lightsources and spotlights - only use this from now on
+  * every light is a spotlight - use >= 180 angle for directional light
+  * @param index: every lightnode must have an index that is unique over all lightnodes - also must be < MAX_LIGHTS in shaders
+  * @param coneAngle: the cone of the spotlight has an angle of +- coneAngle from coneDirection
+  * @param coneDirection: center of the spotlight cone, doesn't have to be normalized
+  */
+class MyLightNode extends TransformationSGNode {
+
+  constructor(position, index, coneAngle, coneDirection, children) {
+    super(children);
+    this.position = position || [0, 0, 0];
+    this.ambient = [0, 0, 0, 1];
+    this.diffuse = [1, 1, 1, 1];
+    this.specular = [1, 1, 1, 1];
+
+    this.index = index;
+    this.uniform = 'u_light';
+
+    this.coneAngle = coneAngle;
+    this.coneDirection = coneDirection;
+
+    this._worldPosition = null;
+  }
+
+  setLightUniforms(context) {
+    const gl = context.gl;
+    //no materials in use
+    if (!context.shader || !isValidUniformLocation(gl.getUniformLocation(context.shader, this.uniform + '[' + this.index + ']' + '.ambient'))) {
+      return;
+    }
+    gl.uniform4fv(gl.getUniformLocation(context.shader, this.uniform + '[' + this.index + ']' + '.ambient'), this.ambient);
+    gl.uniform4fv(gl.getUniformLocation(context.shader, this.uniform + '[' + this.index + ']' + '.diffuse'), this.diffuse);
+    gl.uniform4fv(gl.getUniformLocation(context.shader, this.uniform + '[' + this.index + ']' + '.specular'), this.specular);
+
+    gl.uniform1f(gl.getUniformLocation(context.shader, this.uniform + '[' + this.index + ']' + '.coneAngle'), this.coneAngle);
+    gl.uniform3fv(gl.getUniformLocation(context.shader, this.uniform + '[' + this.index + ']' + '.coneDirection'), this.coneDirection);
+  }
+
+  setLightPosition(context) {
+    const gl = context.gl;
+    if (!context.shader || !isValidUniformLocation(gl.getUniformLocation(context.shader, this.uniform+'Pos' + '[' + this.index + ']'))) {
+      return;
+    }
+    const position = this._worldPosition || this.position;
+    gl.uniform3f(gl.getUniformLocation(context.shader, this.uniform+'Pos[' + this.index + ']'), position[0], position[1], position[2]);
+    // and for spotlights
+    gl.uniform3f(gl.getUniformLocation(context.shader, this.uniform+'PosOriginal[' + this.index + ']'), this.position[0], this.position[1], this.position[2]);
+  }
+
+  computeLightPosition(context) {
+    //transform with the current model view matrix
+    const modelViewMatrix = mat4.multiply(mat4.create(), context.viewMatrix, context.sceneMatrix);
+    const original = this.position;
+    const position =  vec4.transformMat4(vec4.create(), vec4.fromValues(original[0], original[1],original[2], 1), modelViewMatrix);
+
+    this._worldPosition = position;
+  }
+
+  /**
+   * set the light uniforms without updating the last light position
+   */
+  setLight(context) {
+    this.setLightPosition(context);
+    this.setLightUniforms(context);
+  }
+
+  render(context) {
+    this.computeLightPosition(context);
+    this.setLight(context);
+
+    //since this a transformation node update the matrix according to my position
+    this.matrix = glm.translate(this.position[0], this.position[1], this.position[2]);
+    //render children
+    super.render(context);
+  }
 }

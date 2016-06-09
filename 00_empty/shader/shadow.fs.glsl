@@ -3,7 +3,7 @@
 // It shows the basic priciples in a simple way and is sufficient for our lab exercises.
 precision mediump float;
 
-#define MAX_LIGHTS 10
+#define MAX_LIGHTS 2
 
 /**
  * definition of a material structure containing common properties
@@ -25,15 +25,16 @@ struct Light {
 	vec4 specular;
 	// allow spotlights
 	float coneAngle;
-	float coneDirection;
+	vec3 coneDirection;
 };
 
 //illumination related variables
 uniform Material u_material;
-uniform Light u_light[MAX_LIGHTS];						// TODO implement multiple lights... it's kinda working but not sure if correct
+uniform Light u_light[MAX_LIGHTS];
 varying vec3 v_normalVec;
 varying vec3 v_eyeVec;
 varying vec3 v_lightVec[MAX_LIGHTS];
+varying vec3 v_lightToSurface[MAX_LIGHTS];
 
 //texture related variables
 uniform bool u_enableObjectTexture;
@@ -48,7 +49,7 @@ uniform float u_shadowMapHeight;
 varying vec4 v_shadowMapTexCoord[MAX_LIGHTS];
 uniform sampler2D u_depthMap;
 
-vec4 calculateSimplePointLight(Light light, Material material, vec3 lightVec, vec3 normalVec, vec3 eyeVec, vec4 textureColor, vec4 shadowMapTexCoord) {
+vec4 calculateSimplePointLight(Light light, Material material, vec3 lightVec, vec3 normalVec, vec3 eyeVec, vec4 textureColor, vec4 shadowMapTexCoord, float spotlightCoeff) {
 	lightVec = normalize(lightVec);
 	normalVec = normalize(normalVec);
 	eyeVec = normalize(eyeVec);
@@ -93,6 +94,7 @@ vec4 calculateSimplePointLight(Light light, Material material, vec3 lightVec, ve
 		shadowCoeff = 0.0;*/
 
   //EXTRA TASK: Improve shadow quality by sampling multiple shadow coefficients (a.k.a. PCF)
+	// TODO implement shadowing (see lab 6...shadow node)
 	float sumShadowCoeff = 0.0;
 	for(float dx=-1.0; dx <= 1.0; dx++)
 	{
@@ -109,7 +111,7 @@ vec4 calculateSimplePointLight(Light light, Material material, vec3 lightVec, ve
 	shadowCoeff = sumShadowCoeff/9.0;
 
   //TASK 2.5: apply shadow coefficient to diffuse and specular part
-  return c_amb + shadowCoeff * (c_diff + c_spec) + c_em;
+  return c_amb + spotlightCoeff * shadowCoeff * (c_diff + c_spec) + c_em;
 	//return c_amb + c_diff + c_spec + c_em;
 }
 
@@ -121,9 +123,17 @@ void main (void) {
     textureColor = texture2D(u_tex,v_texCoord);
   }
 
+	// apply spotlight
+	// TODO spotlights aren't perfectly working, try spotlight closer to terrain, over terrain ridges (they aren't being illuminated for some reason - terrain normals?)
+	// TODO make spotlight edges a little softer!
 	for(int i = 0; i < MAX_LIGHTS; i++) {
-		// if spotlight (coneangle != 360) then we only apply it's lighting, when ... TODO implement spotlights (http://www.tomdalling.com/blog/modern-opengl/08-even-more-lighting-directional-lights-spotlights-multiple-lights/#spotlights)
-		gl_FragColor += calculateSimplePointLight(u_light[i], u_material, v_lightVec[i], v_normalVec, v_eyeVec, textureColor, v_shadowMapTexCoord[i]);
+		// first calculate the angle between: the vector from the light source to the point in space   AND   the direction of the light (i.e. the center of the cone)
+		float lightToSurfaceAngle = degrees(acos(dot(normalize(v_lightToSurface[i]), normalize(u_light[i].coneDirection))));
+		// then obviously if this angle is greater than the angle of the spotlight, it means that this point is not within the cone of the lightsource, and thus is not being illuminated (setting spotlight coeff to 0...calculating only ambient and emmitting part)
+		if(lightToSurfaceAngle <= u_light[i].coneAngle){
+			gl_FragColor += calculateSimplePointLight(u_light[i], u_material, v_lightVec[i], v_normalVec, v_eyeVec, textureColor, v_shadowMapTexCoord[i], 1.0);
+		} else {
+			gl_FragColor += calculateSimplePointLight(u_light[i], u_material, v_lightVec[i], v_normalVec, v_eyeVec, textureColor, v_shadowMapTexCoord[i], 0.0);
+		}
 	}
-
 }
