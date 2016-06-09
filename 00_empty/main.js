@@ -18,7 +18,7 @@ const camera = {
     y: 0,
     z: 0
   },
-  speed: 10  // TODO choose speed
+  speed: 30  // TODO choose speed
 };
 
 // scenegraph
@@ -48,6 +48,8 @@ function init(resources) {
  * builds up the scenegraph and returns the root node
  */
 function createSceneGraph(resources) {
+  // TODO maybe compact this whole stuff a little (make use of children constructor)
+
   let root = new ShaderSGNode(program);
   let enableTexNode = new SetUniformSGNode('u_enableObjectTexture', true);
 
@@ -90,7 +92,10 @@ function createSceneGraph(resources) {
   // TODO find crawler texture
   let sandcrawlerBody = makeSandcrawlerBody();
   let sandcrawlerCrawlersNode = composeCrawlerQuad(resources);
+  let sandcrawlerPlatformModelNode = new RenderSGNode(makeRect(0.5, 0.25));
   let sandcrawlerBodyModelNode = new RenderSGNode(sandcrawlerBody);
+  let sandcrawlerPlatformTexNode = new AdvancedTextureSGNode(resources.platformTex);
+  let sandcrawlerPlatformTranNode = new TransformationSGNode(glm.transform({translate: [0.5, 0, 0.3], rotateX: -90}));
   let sandcrawlerBodyTexNode = new AdvancedTextureSGNode(resources.rustyMetalTex);
   let sandcrawlerCrawlersTranNode = new TransformationSGNode(glm.transform({translate: [0.5, -0.05, 0]}));    // position crawlers below body
   let sandcrawlerMatNode = new MaterialSGNode();
@@ -115,8 +120,11 @@ function createSceneGraph(resources) {
   sandcrawlerTranNode.append(sandcrawlerMatNode);
   sandcrawlerMatNode.append(sandcrawlerBodyTexNode);
   sandcrawlerMatNode.append(sandcrawlerCrawlersTranNode);
+  sandcrawlerMatNode.append(sandcrawlerPlatformTranNode);
   sandcrawlerMatNode.append(enableTexNode);
   sandcrawlerCrawlersTranNode.append(sandcrawlerCrawlersNode);
+  sandcrawlerPlatformTranNode.append(sandcrawlerPlatformTexNode);
+  sandcrawlerPlatformTexNode.append(sandcrawlerPlatformModelNode);
   sandcrawlerBodyTexNode.append(sandcrawlerBodyModelNode);
   root.append(sandcrawlerTranNode);
 
@@ -141,13 +149,13 @@ function createSceneGraph(resources) {
   rectTexNode.append(enableTexNode);
   root.append(rectShaderNode);
 
-  lightNode.append(lightMatNode);   // TODO applying a texture to lightnode changes it's position...why? - try without lightTex/enableTex nodes
+  lightNode.append(lightMatNode);
   lightMatNode.append(lightTexNode);
   lightTexNode.append(enableTexNode);
   lightTexNode.append(sphereModelNode);
   root.append(lightNode);
 
-  light2Node.append(light2ModelNode);   // TODO how to skin a light node? even second light source to illuminate first does not make texture on first visible
+  light2Node.append(light2ModelNode);
   light2TranNode.append(light2Node);
   //root.append(light2TranNode);
   root.append(light2Node);
@@ -192,7 +200,31 @@ function makeSandcrawlerBody() {
     0,.75,0, //13
     0,0,.5, //14
     0,.75,.5 //15
-  );
+  )
+
+  // back body texture coordinates
+  texture.push(
+    0,0,  0,1,  1,0,  1,1,
+    0,0,  0,1,  1,0,  1,1,
+    0,0,  0,1,  1,0,  1,1,
+    0,0,  0,1,  1,0,  1,1
+  )
+
+  // now triangles
+  index.push(
+    // side face
+    0,1,3,
+    0,2,3,
+    // top face
+    4,6,7,
+    7,5,4,
+    // other side face
+    8,9,10,
+    10,11,9,
+    // backface
+    12,13,15,
+    15,14,12
+  )
 
   // front part of body ... trapezes
   vertices.push(
@@ -223,34 +255,14 @@ function makeSandcrawlerBody() {
     1.6,.5,.4 //35
   )
 
-  // body texture coordinates
+  // front body texture coordinates
   texture.push(
-    0,0,  0,1,  1,0,  1,1,
-    0,0,  0,1,  1,0,  1,1,
-    0,0,  0,1,  1,0,  1,1,
-    0,0,  0,1,  1,0,  1,1,
     0,0,  0,1,  1,0,  1,1,
     0,0,  0,1,  1,0,  1,1,
     0,0,  0,1,  1,0,  1,1,
     0,0,  0,1,  1,0,  1,1,
     0,0,  0,1,  1,0,  1,1
   )
-
-  // now triangles
-  index.push(
-    // side face
-    0,1,3,
-    0,2,3,
-    // top face
-    4,6,7,
-    7,5,4,
-    // other side face
-    8,9,10,
-    10,11,9,
-    // backface
-    12,13,15,
-    15,14,12
-  );
 
   // now triangles again
   index.push(
@@ -274,50 +286,50 @@ function makeSandcrawlerBody() {
   // now build vertex - triangle datastructure to automatically compute normals
   // TODO put triangle vertex indices in correct order for normal computation
   var vertexTriangles = [];
-  vertexTriangles.push([0,1,3,  0,2,3]);
+  vertexTriangles.push([0,1,3,  0,3,2]);
   vertexTriangles.push([1,0,3]);
   vertexTriangles.push([2,0,3]);
   vertexTriangles.push([3,0,1,  3,0,2]);
 
-  vertexTriangles.push([4,6,7,  7,5,4]);
-  vertexTriangles.push([7,5,4]);
-  vertexTriangles.push([4,6,7]);
-  vertexTriangles.push([4,6,7,  7,5,4]);
+  vertexTriangles.push([4,6,7,  4,7,5]);
+  vertexTriangles.push([5,7,4]);
+  vertexTriangles.push([6,4,7]);
+  vertexTriangles.push([7,4,6,  7,5,4]);
 
   vertexTriangles.push([8,9,10]);
-  vertexTriangles.push([8,9,10,  10,11,9]);
-  vertexTriangles.push([8,9,10,  10,11,9]);
-  vertexTriangles.push([10,11,9]);
+  vertexTriangles.push([9,8,10,  9,10,11]);
+  vertexTriangles.push([10,8,9,  10,11,9]);
+  vertexTriangles.push([11,10,9]);
 
-  vertexTriangles.push([12,13,15,  15,14,12]);
-  vertexTriangles.push([12,13,15]);
-  vertexTriangles.push([15,14,12]);
-  vertexTriangles.push([12,13,15,  15,14,12]);
+  vertexTriangles.push([12,13,15,  12,15,14]);
+  vertexTriangles.push([13,12,15]);
+  vertexTriangles.push([14,15,12]);
+  vertexTriangles.push([15,12,13,  15,14,12]);
 
-  vertexTriangles.push([16,17,19,  19,18,16]);
-  vertexTriangles.push([16,17,19]);
-  vertexTriangles.push([19,18,16]);
-  vertexTriangles.push([16,17,19,  19,18,16]);
+  vertexTriangles.push([16,17,19,  16,19,18]);
+  vertexTriangles.push([17,16,19]);
+  vertexTriangles.push([18,19,16]);
+  vertexTriangles.push([19,16,17,  19,18,16]);
 
-  vertexTriangles.push([20,21,23,  23,22,20]);
-  vertexTriangles.push([20,21,23]);
-  vertexTriangles.push([23,22,20]);
-  vertexTriangles.push([20,21,23,  23,22,20]);
+  vertexTriangles.push([20,21,23,  20,23,22]);
+  vertexTriangles.push([21,20,23]);
+  vertexTriangles.push([22,23,20]);
+  vertexTriangles.push([23,20,21,  23,22,20]);
 
-  vertexTriangles.push([24,25,27,  27,26,24]);
-  vertexTriangles.push([24,25,27]);
-  vertexTriangles.push([27,26,24]);
-  vertexTriangles.push([24,25,27,  27,26,24]);
+  vertexTriangles.push([24,25,27,  24,27,26]);
+  vertexTriangles.push([25,24,27]);
+  vertexTriangles.push([26,27,24]);
+  vertexTriangles.push([27,24,25,  27,26,24]);
 
-  vertexTriangles.push([28,29,31, 31,30,28]);
-  vertexTriangles.push([28,29,31]);
-  vertexTriangles.push([31,30,28]);
-  vertexTriangles.push([28,29,31,  31,30,28]);
+  vertexTriangles.push([28,29,31, 28,31,30]);
+  vertexTriangles.push([29,28,31]);
+  vertexTriangles.push([30,31,28]);
+  vertexTriangles.push([31,28,29,  31,30,28]);
 
-  vertexTriangles.push([32,33,35,  35,34,32]);
-  vertexTriangles.push([32,33,35]);
-  vertexTriangles.push([35,34,32]);
-  vertexTriangles.push([32,33,35,  35,34,32]);
+  vertexTriangles.push([32,33,35,  32,35,34]);
+  vertexTriangles.push([33,32,35]);
+  vertexTriangles.push([34,35,32]);
+  vertexTriangles.push([35,32,33,  35,34,32]);
 
   calculateNormals(vertexTriangles, vertices, normal, false);
 
@@ -334,7 +346,6 @@ function makeSandcrawlerBody() {
   * Returns the top scenegraph node of a quad with size fitting the sandcrawler
   */
 function composeCrawlerQuad(resources) {
-  // TODO normals correct? some rects remain black...
   // we need 5 rects
   var left = makeRect(0.25, 0.05);
   var bottom = makeRect(0.5, 0.25);
@@ -344,10 +355,10 @@ function composeCrawlerQuad(resources) {
 
   var root = new SGNode(
     new SetUniformSGNode('u_enableObjectTexture', true, [
-      new TransformationSGNode(glm.transform({}), new AdvancedTextureSGNode(resources.crawlerTex0, new RenderSGNode(front))),
+      new TransformationSGNode(glm.transform({rotateX: 180}), new AdvancedTextureSGNode(resources.crawlerTex0, new RenderSGNode(front))),
       new TransformationSGNode(glm.transform({rotateX: 180, translate: [0,0,0.5]}), new AdvancedTextureSGNode(resources.crawlerTex0, new RenderSGNode(back))),
       new TransformationSGNode(glm.transform({rotateY: 90, translate: [-0.5, 0, 0.25]}), new AdvancedTextureSGNode(resources.crawlerTex1, new RenderSGNode(left))),
-      new TransformationSGNode(glm.transform({rotateY: -90, translate: [0.5, 0, 0.25]}), new AdvancedTextureSGNode(resources.crawlerTex1, new RenderSGNode(right))),
+      new TransformationSGNode(glm.transform({rotateY: 90, translate: [0.5, 0, 0.25]}), new AdvancedTextureSGNode(resources.crawlerTex1, new RenderSGNode(right))),
       new TransformationSGNode(glm.transform({rotateX: -90, translate: [0, -0.05, 0.25]}), new AdvancedTextureSGNode(resources.crawlerTex1, new RenderSGNode(bottom)))
   ]));
 
@@ -388,9 +399,12 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
   // returns
   var vertices = [];
   var normal = [];
-  var texture = [];  // TODO set texture coordinates properly?
+  var texture = [];
   var index = [];
 
+  // current texture coordinates to set
+  var currentTC0 = 1;
+  var currentTC1 = 0;
 
   // iterate through image data, skipping according to resolution
   var meshWidth = heightmap.width / stepX + 1;
@@ -416,6 +430,34 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
       // save vertex
       vertices.push(x, -z, y);   // height of image is height (y) of terrain
 
+      // texture coordinates:
+      //
+      //  01___11___01___11_  ...
+      //   |  /|   /|   /|
+      //   | / |  / |  / |
+      //  00___10___00___10_
+      //   |  /|   /|   /|
+      //   | / |  / |  / |
+      //  01___11___01___11_
+      //   |   |    |    |
+      //  ...
+      //
+      texture.push(currentTC0, currentTC1);
+      if(currentTC0 == 0 && currentTC1 == 0) {
+        currentTC0 = 1;
+        currentTC1 = 0;
+      } else if(currentTC0 == 0 && currentTC1 == 1) {
+        currentTC0 = 1;
+        currentTC1 = 1;
+      } else if(currentTC0 == 1 && currentTC1 == 0) {
+        currentTC0 = 0;
+        currentTC1 = 0;
+      } else if(currentTC0 == 1 && currentTC1 == 1) {
+        currentTC0 = 0;
+        currentTC1 = 1;
+      }
+
+
       // now the harder part: building triangles:
       // from every vertex start 2 triangles: type A = {i, i+1, i+meshWidth} and type B = {i, i+width, i+meshWidth-1}   (meshWidth == vertices in a line)
       // but: no type B triangle from first vertex in line, not type A triangle from last vertex in line, no triangles from vertices in last line
@@ -428,9 +470,9 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
           // push type B
           index.push(vertexIndex, vertexIndex + meshWidth, vertexIndex + meshWidth - 1);
           // add texture coordinates
-          texture.push( 0, 0,
+          /*texture.push( 0, 0,
                         1, 0,
-                        1, 1);
+                        1, 1);*/
           // keep track of all triangles adjacent to a vertex to compute normals later
           if(!vertexTriangles[vertexIndex]) {
             vertexTriangles[vertexIndex] = [];
@@ -451,9 +493,9 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
           // push type A
           index.push(vertexIndex, vertexIndex + 1, vertexIndex + meshWidth);
           // add texture coordinates
-          texture.push( 0, 0,
+          /*texture.push( 0, 0,
                         0, 1,
-                        1, 1);
+                        1, 1);*/
           // keep track of all triangles adjacent to a vertex to compute normals later
           if(!vertexTriangles[vertexIndex]) {
             vertexTriangles[vertexIndex] = [];
@@ -467,6 +509,16 @@ function generateTerrain(heightmap, stepX, stepY, heightScaling) {
             vertexTriangles[vertexIndex+meshWidth] = [];
           }
           vertexTriangles[vertexIndex+meshWidth].push(vertexIndex + meshWidth, vertexIndex, vertexIndex + 1);
+
+        } else {
+            // last vertex in line - set new texture coordinates for next line!
+            if(currentTC0 == 1 && currentTC1 == 1 || currentTC0 == 0 && currentTC1 == 1) {
+              currentTC0 = 0;
+              currentTC1 = 0;
+            } else if(currentTC0 == 0 && currentTC1 == 0 || currentTC0 == 1 && currentTC1 == 0) {
+              currentTC0 = 0;
+              currentTC1 = 1;
+            }
         }
       }
 
@@ -566,8 +618,8 @@ function render() {
 
   //console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
 
-  light2TranY += 0.5;
-  light2TranNode.matrix = glm.transform({translate: [0, light2TranY, 0], rotateY: light2TranY/10});
+  //light2TranY += 0.5;
+  //light2TranNode.matrix = glm.transform({translate: [0, light2TranY, 0], rotateY: light2TranY/10});
 
   //render scenegraph
   root.render(context);
@@ -597,7 +649,7 @@ loadResources({
   rustyMetalTex: 'assets/rusty_metal.jpg',
   crawlerTex0: 'assets/crawlers0.jpg',
   crawlerTex1: 'assets/crawlers1.jpg',
-  wilsonTex: 'assets/wilson.jpg',
+  platformTex: 'assets/platform.jpg',
 
   // models
   leia: 'assets/models/leia/Leia/Leia.obj'
