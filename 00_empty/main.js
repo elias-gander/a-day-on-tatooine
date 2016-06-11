@@ -2,9 +2,13 @@
 var gl = null,
     program = null;
 
+var timePrev = 0;
+
 // camera control, set starting viewpoint here!
+var cameraEnabled = false;
 const camera = {
-  rotation: {
+  rotation: {       // TODO fix y must never be 0! (normal matrix computation fails)
+                    // TODO when enabling free camera during flight, view direction is reset to rotation (how to update rotation angles while computing flight camera rotations)
     x: 3.85,
     y: 149.55
   },
@@ -20,6 +24,31 @@ const camera = {
   },
   speed: 30  // TODO choose speed
 };
+
+// descripes the current camera flight plan
+const flight = {
+  // two types:
+  // flying in a straight line
+  straight: false,
+  // circling around a point
+  circling: false,
+  // parameters:
+  // duration in milliseconds
+  duration: 0,
+  // starting point of flight
+  origin: vec3.fromValues(0,0,0),
+  // point to reach/circle around
+  target: vec3.fromValues(0,0,0),
+  // circling only: degrees turned
+  degrees: 0.0,
+  // function that is called after the destination is reached/degrees circled
+  callback: function() {},
+  // convenience: information about next flight (see straight calculations in render)
+  next: "",
+  nextTarget: vec3.fromValues(0,0,0),
+  // specifies that 100/turnPart % of duration are dedicated to camera orientation towards the target
+  turnPart: 0
+}
 
 // scenegraph
 var root = null;
@@ -42,6 +71,46 @@ function init(resources) {
   root = createSceneGraph(resources);
 
   initInteraction(gl.canvas);
+
+  // define camera flight using bound callback functions
+  setupFlight(true, false, 5000, 0, [0,-50,0], 0, 3, "circle", [100,0,100],
+    // after finishing straight flight -> setup circling flight
+    setupFlight.bind(this, false, true, 5000, 5000, [100,0,100], 360, 3, "straight", [500,-250,500],
+
+      setupFlight.bind(this, true, false, 5000, 10000, [500,-250,500], 0, 3, "circle", [750,0,750],
+
+        setupFlight.bind(this, false, true, 5000, 15000, [750,0,750], 360, 3, "straight", [2000,-500,0],
+
+          setupFlight.bind(this, true, false, 50000, 20000, [2000,-500,0], 0, 3, "circle", [500,0,500],
+
+            setupFlight.bind(this, false, true, 1200000, 25000, [500,0,500], 360*10, 3, "", [0,0,0],
+              function() {cameraEnabled = true;}
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+/**
+  * sets the parameters to run a flight animation while rendering
+  * @param callback: it is intended to use setupFlight.bind(this, ...parameters for next flight animation...) for this parameter, which after completing this flight (duration over) sets up the parameters for the next one.
+  * This way arbitrary long sequences of flight animations can be defined before starting to render the movie.
+  * for other parameters see flight datastructure
+  */
+function setupFlight(straight, circling, duration, startTime, target, degrees, turnPart, next, nextTarget, callback) {
+  flight.straight = straight;
+  flight.circling = circling;
+  flight.duration = duration;
+  flight.startTime = startTime;
+  flight.origin = vec3.fromValues(camera.position.x, camera.position.y, camera.position.z);
+  flight.target = target;
+  flight.degrees = degrees;
+  flight.turnPart = turnPart;
+  flight.next = next;
+  flight.nextTarget = nextTarget;
+  flight.callback = callback;
 }
 
 /**
@@ -99,11 +168,11 @@ function createSceneGraph(resources) {
   let sandcrawlerBodyTexNode = new AdvancedTextureSGNode(resources.rustyMetalTex);
   let sandcrawlerCrawlersTranNode = new TransformationSGNode(glm.transform({translate: [0.5, -0.05, 0]}));    // position crawlers below body
   let sandcrawlerMatNode = new MaterialSGNode();
-  let sandcrawlerTranNode = new TransformationSGNode(glm.transform({translate: [500, -50, 500], rotateX: 180, scale: 200}));
+  let sandcrawlerTranNode = new TransformationSGNode(glm.transform({translate: [500, -50, 500], rotateX: 180, scale: 100}));
 
 
   // test terrain generation from heightmap
-  let terrain = generateTerrain(resources.heightmap, 16, 16, 120);
+  let terrain = generateTerrain(resources.heightmap, 8, 8, 120);
   let terrainModelNode = new RenderSGNode(terrain);
   let terrainTexNode = new AdvancedTextureSGNode(resources.sandTex);
   let terrainMatNode = new MaterialSGNode();
@@ -587,11 +656,20 @@ function calculateNormals(vertexTriangles, vertices, normal, flip) {
   });
 }
 
+
+var firstTurnCompleted = false;
+
 /**
  * render one frame
  */
-function render() {
-  gl.clearColor(0.9, 0.9, 0.9, 1.0);
+function render(timeInMilliseconds) {
+  //calculate delta time for animation
+  //convert timeInMilliseconds in seconds
+  var timeNow = timeInMilliseconds / 1000;
+  var timeDelta = timeNow - timePrev;
+  timePrev = timeNow;
+
+  gl.clearColor(77/255, 155/255, 221/255, 1.0);
 
   //clear the buffer
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -602,24 +680,103 @@ function render() {
   // TODO which Field of view/other parameters?
   context.projectionMatrix = mat4.perspective(mat4.create(), 50, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.01, 10000);
 
-  // free moving camera: https://sidvind.com/wiki/Yaw,_pitch,_roll_camera
-  // gl-matrix doc: http://glmatrix.net/docs/mat4.html
-  let center = [camera.position.x + Math.cos(camera.rotation.x) * Math.sin(camera.rotation.y), camera.position.y + Math.cos(camera.rotation.y), camera.position.z + Math.sin(camera.rotation.y) * Math.sin(camera.rotation.x)];
-  // camera orientation
-  let up = [0, 1, 0];
-  // generate view matrix from position, center and up
-  let lookAtMatrix = mat4.lookAt(mat4.create(), [camera.position.x, camera.position.y, camera.position.z], center, up);
-  context.viewMatrix = lookAtMatrix;
 
-  // extract normalized direction vector generated by lookAt - used to move in pointed direction
-  camera.direction.x = lookAtMatrix[2];
-  camera.direction.y = lookAtMatrix[6];
-  camera.direction.z = lookAtMatrix[10];
 
-  //console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
+  // camera flight
+  // TODO don't repeat yourself
+  // TODO keep looking in currentdirection if flight stops/interrupted
+  // TODO clean up
+  if(!cameraEnabled){
+    if(flight.straight) {
+      // move towards target,
+      // how much of the complete flight duration has already passed?
+      var flightCompleted = Math.min((timeInMilliseconds - flight.startTime) / flight.duration, 1);
+      // flight route
+      var originToTarget = vec3.subtract(vec3.create(), flight.target, flight.origin);
+      // calculate the part of the route we should have completed at this time
+      var completedRoute = vec3.scale(vec3.create(), originToTarget, flightCompleted);
+      // calculate the position we should be on
+      var position = vec3.add(vec3.create(), completedRoute, flight.origin);
+      // set this as our position
+      camera.position.x = position[0];
+      camera.position.y = position[1];
+      camera.position.z = position[2];
 
-  //light2TranY += 0.5;
-  //light2TranNode.matrix = glm.transform({translate: [0, light2TranY, 0], rotateY: light2TranY/10});
+      // rotate view towards target, calculation: CURRENTTARGET = CURRENTDIR + (CURRENTDIR_TO_TARGET) * FLIGHTCOMPLETED, (currentTarget approaches target as flightCompleted approaches 1)
+      var currentDirToTarget = vec3.subtract(vec3.create(), flight.target, vec3.fromValues(camera.direction.x, camera.direction.y, camera.direction.z));
+      var currentTarget = vec3.add(vec3.create(), vec3.fromValues(camera.direction.x, camera.direction.y, camera.direction.z), vec3.scale(vec3.create(), currentDirToTarget, Math.min(flightCompleted * flight.turnPart, 1)));
+
+      // turn towards next flight target within this flight if next flight is circling (easier to implement here...)
+      if(flight.next === 'circle' && flightCompleted >= (1 - 1/flight.turnPart)) {
+        currentDirToTarget = vec3.subtract(vec3.create(), flight.nextTarget, currentTarget);
+        currentTarget = vec3.add(vec3.create(), currentTarget, vec3.scale(vec3.create(), currentDirToTarget, Math.min((flightCompleted - 1 + 1/flight.turnPart) * flight.turnPart, 1)));
+      }
+
+      // finally build lookAt matrix after calculating movement and rotation
+      context.viewMatrix = mat4.lookAt(mat4.create(), [camera.position.x, camera.position.y, camera.position.z], currentTarget, [0,1,0]);
+
+console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
+
+      if(flightCompleted == 1) {
+        // update camera direction to smoothly turn again to new target
+        camera.direction.x = flight.target[0];
+        camera.direction.y = flight.target[1];
+        camera.direction.z = flight.target[2];
+        // initiate next flight when we reached our position
+        flight.callback();
+        // set start time of next flight
+        flight.startTime = timeInMilliseconds;
+      }
+
+    } else if(flight.circling) {
+      // circle around given target in current distance from target for given degrees
+      // how much of the complete flight duration has already passed?
+      var flightCompleted = Math.min((timeInMilliseconds - flight.startTime) / flight.duration, 1);
+
+      var radius = Math.abs(vec3.distance(vec3.fromValues(camera.position.x, camera.position.y, camera.position.z), vec3.fromValues(flight.target[0], camera.position.y, flight.target[2]))); // note as we circle on our current y position, we actually calculate a circle and not a sphere
+
+      // avoid jump on start of circling by calculating which rotation is equivalent to the current position in the orbit of the target
+      var initialDeg = Math.acos((flight.origin[0] - flight.target[0])/radius) * (180/Math.PI);
+      var initialDeg2 = Math.asin((flight.origin[2] - flight.target[2])/radius) * (180/Math.PI);   // TODO why is this not the same as initalDeg
+      // how many degrees should we have rotated at this point?
+      var currentDegrees = flight.degrees * flightCompleted - initialDeg;
+
+      // calculate the x,z point on the target orbit for the current degrees
+      camera.position.x = flight.target[0] + radius*Math.cos(glm.deg2rad(currentDegrees));
+      camera.position.z = flight.target[2] + radius*Math.sin(glm.deg2rad(currentDegrees));
+
+      // and plug them into lookat
+      context.viewMatrix = mat4.lookAt(mat4.create(), [camera.position.x, camera.position.y, camera.position.z], flight.target, [0,1,0]);
+
+console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
+
+      // initiate next flight when we reached our position
+      if(flightCompleted == 1) {
+        // update camera direction to smoothly turn again to new target
+        camera.direction.x = flight.target[0];
+        camera.direction.y = flight.target[1];
+        camera.direction.z = flight.target[2];
+
+        flight.callback();
+      }
+    }
+
+  // free camera
+  } else {
+    // free moving camera: https://sidvind.com/wiki/Yaw,_pitch,_roll_camera
+    // gl-matrix doc: http://glmatrix.net/docs/mat4.html
+    let center = [camera.position.x + Math.cos(camera.rotation.x) * Math.sin(camera.rotation.y), camera.position.y + Math.cos(camera.rotation.y), camera.position.z + Math.sin(camera.rotation.y) * Math.sin(camera.rotation.x)];
+    // generate view matrix from position, center and up
+    context.viewMatrix = mat4.lookAt(mat4.create(), [camera.position.x, camera.position.y, camera.position.z], center, [0,1,0]);
+
+    // extract normalized direction vector generated by lookAt - used to move in pointed direction
+    camera.direction.x = context.viewMatrix[2];
+    camera.direction.y = context.viewMatrix[6];
+    camera.direction.z = context.viewMatrix[10];
+
+
+console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
+  }
 
   //render scenegraph
   root.render(context);
@@ -659,7 +816,7 @@ loadResources({
   init(resources);
 
   //render one frame
-  render();
+  render(0);
 });
 
 //camera control
@@ -677,16 +834,16 @@ function initInteraction(canvas) {
     };
   }
   canvas.addEventListener('mousedown', function(event) {
-    mouse.pos = toPos(event);
-    mouse.leftButtonDown = event.button === 0;
+      mouse.pos = toPos(event);
+      mouse.leftButtonDown = event.button === 0;
   });
   canvas.addEventListener('mousemove', function(event) {
     const pos = toPos(event);
     const delta = { x : mouse.pos.x - pos.x, y: mouse.pos.y - pos.y };
-    if (mouse.leftButtonDown) {
+    if (mouse.leftButtonDown && cameraEnabled) {
       //add the relative movement of the mouse to the rotation variables
   		camera.rotation.x -= delta.x / 1000;
-  		camera.rotation.y += delta.y / 1000;
+      camera.rotation.y += delta.y / 1000;
     }
     mouse.pos = pos;
   });
@@ -701,17 +858,21 @@ function initInteraction(canvas) {
       camera.rotation.x = 0;
   		camera.rotation.y = 0;
     }
+
+    if (event.code === 'KeyC') {
+      cameraEnabled = !cameraEnabled;
+    }
   });
 
   // forward/backward movement
   // TODO not sure if working correctly (passing through some axis)
   document.addEventListener('keydown', function(event) {
-    if(event.code === 'ArrowUp') {
+    if(event.code === 'ArrowUp' && cameraEnabled) {
       camera.position.x -= camera.direction.x * camera.speed;
       camera.position.y -= camera.direction.y * camera.speed;
       camera.position.z -= camera.direction.z * camera.speed;
 
-    } else if(event.code === 'ArrowDown') {
+    } else if(event.code === 'ArrowDown' && cameraEnabled) {
       camera.position.x += camera.direction.x * camera.speed;
       camera.position.y += camera.direction.y * camera.speed;
       camera.position.z += camera.direction.z * camera.speed;
