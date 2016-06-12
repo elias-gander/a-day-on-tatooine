@@ -1,6 +1,14 @@
 //the OpenGL context
 var gl = null,
-    program = null;
+    program = null,
+    postProcessProgram = null,
+    resources = null;
+
+var renderTargetFramebuffer = null;
+var renderTargetColorTexture = null;
+var renderTargetDepthTexture = null;
+
+var width = 1024, height = 1024;
 
 var timePrev = 0;
 
@@ -51,7 +59,7 @@ const flight = {
 }
 
 // scenegraph
-var root = null;
+var root = null, postProcess = null;
 var light2TranNode;
 var light2TranY = 0;
 
@@ -60,15 +68,21 @@ var light2TranY = 0;
  */
 function init(resources) {
   //create a GL context
-  gl = createContext(800 /*width*/, 600 /*height*/); // TODO which width and height?
+  gl = createContext(width /*width*/, height /*height*/); // TODO which width and height?
 
   gl.enable(gl.DEPTH_TEST);
 
   //compile and link shader program
   program = createProgram(gl, resources.vs, resources.fs);
+  postProcessProgram = createProgram(gl, resources.postProcessVs, resources.postProcessFs);
 
-  //create scenegraph
-  root = createSceneGraph(resources);
+  this.resources = resources;
+
+  // allow to texture rendering (for post processing)
+  initRenderToTexture();
+
+  //create scenegraph (set root and postProcess nodes)
+  createSceneGraph(resources);
 
   initInteraction(gl.canvas);
 
@@ -81,7 +95,7 @@ function init(resources) {
 
         setupFlight.bind(this, false, true, 5000, 15000, [750,0,750], 360, 3, "straight", [2000,-500,0],
 
-          setupFlight.bind(this, true, false, 50000, 20000, [2000,-500,0], 0, 3, "circle", [500,0,500],
+          setupFlight.bind(this, true, false, 5000, 20000, [2000,-500,0], 0, 3, "circle", [500,0,500],
 
             setupFlight.bind(this, false, true, 1200000, 25000, [500,0,500], 360*10, 3, "", [0,0,0],
               function() {cameraEnabled = true;}
@@ -91,6 +105,44 @@ function init(resources) {
       )
     )
   );
+}
+
+function initRenderToTexture() {
+  var depthTextureExt = gl.getExtension("WEBGL_depth_texture");
+  if(!depthTextureExt) { alert('No depth texture support!!!'); return; }
+
+  //generate color texture (required mainly for debugging and to avoid bugs in some WebGL platforms)
+  renderTargetFramebuffer = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, renderTargetFramebuffer);
+
+  //create color texture
+  renderTargetColorTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, renderTargetColorTexture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+  //create depth texture
+  renderTargetDepthTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, renderTargetDepthTexture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, width, height, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_SHORT, null);
+
+  //bind textures to framebuffer
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, renderTargetColorTexture, 0);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, renderTargetDepthTexture ,0);
+
+  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!=gl.FRAMEBUFFER_COMPLETE)
+    {alert('Framebuffer incomplete!');}
+
+  //clean up
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
 /**
@@ -114,12 +166,12 @@ function setupFlight(straight, circling, duration, startTime, target, degrees, t
 }
 
 /**
- * builds up the scenegraph and returns the root node
+ * builds up the scenegraph and sets the root and postProcess nodes
  */
 function createSceneGraph(resources) {
   // TODO maybe compact this whole stuff a little (make use of children constructor)
 
-  let root = new ShaderSGNode(program);
+  root = new ShaderSGNode(program);
   let enableTexNode = new SetUniformSGNode('u_enableObjectTexture', true);
 
   // --------------------- camera test scene ------------------------
@@ -130,7 +182,7 @@ function createSceneGraph(resources) {
   let sphereTranNode = new TransformationSGNode(glm.transform({translate: [0, 0, 0]}));
 
   let rect = makeRect(1.5, 1.3);
-  let rectShaderNode = new ShaderSGNode(createProgram(gl, resources.whiteVs, resources.whiteFs));   // trying to use a different shader - how to combine shader results?
+  let rectShaderNode = new ShaderSGNode(createProgram(gl, resources.whiteVs, resources.whiteFs));
   let rectModelNode = new RenderSGNode(rect);
   let rectTexNode = new AdvancedTextureSGNode(resources.tex);
   let rectMatNode = new MaterialSGNode();
@@ -204,7 +256,6 @@ function createSceneGraph(resources) {
   leiaTexNode.append(leiaModelNode);
   root.append(leiaTranNode);
 
-
   sphereTranNode.append(sphereMatNode);
   sphereMatNode.append(sphereTexNode);
   sphereTexNode.append(enableTexNode);
@@ -228,8 +279,6 @@ function createSceneGraph(resources) {
   light2TranNode.append(light2Node);
   //root.append(light2TranNode);
   root.append(light2Node);
-
-  return root;
 }
 
 /**
@@ -441,6 +490,7 @@ function composeCrawlerQuad(resources) {
  * @param stepX|Y: how many pixels to skip in x|y direction when parsing the heightmap (must divide heightmap width|height)
  * @param heightModifier: resulting height is [0, 1] * heightScaling
  */
+// TODO as I realized now - this should have been done in a vertex shader D:
 function generateTerrain(heightmap, stepX, stepY, heightScaling) {
   // TODO fix stepX|Y == (1,4,?) does not work! (incorrect triangle indices most likely)
 
@@ -657,10 +707,8 @@ function calculateNormals(vertexTriangles, vertices, normal, flip) {
 }
 
 
-var firstTurnCompleted = false;
-
 /**
- * render one frame
+ * render one frame (to the screen)
  */
 function render(timeInMilliseconds) {
   //calculate delta time for animation
@@ -669,20 +717,8 @@ function render(timeInMilliseconds) {
   var timeDelta = timeNow - timePrev;
   timePrev = timeNow;
 
-  gl.clearColor(77/255, 155/255, 221/255, 1.0);
-
-  //clear the buffer
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-  //setup context and camera matrices
-  const context = createSGContext(gl);
-
-  // TODO which Field of view/other parameters?
-  context.projectionMatrix = mat4.perspective(mat4.create(), 50, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.01, 10000);
-
-
-
-  // camera flight
+  var viewMatrix;
+  // camera flight - calculate view matrix
   // TODO don't repeat yourself
   // TODO keep looking in currentdirection if flight stops/interrupted
   // TODO clean up
@@ -691,6 +727,10 @@ function render(timeInMilliseconds) {
       // move towards target,
       // how much of the complete flight duration has already passed?
       var flightCompleted = Math.min((timeInMilliseconds - flight.startTime) / flight.duration, 1);
+      // allows flight stop, if start time hasn't been reached yet
+      if(flightCompleted < 0) {
+        flightCompleted = 0;
+      }
       // flight route
       var originToTarget = vec3.subtract(vec3.create(), flight.target, flight.origin);
       // calculate the part of the route we should have completed at this time
@@ -713,9 +753,9 @@ function render(timeInMilliseconds) {
       }
 
       // finally build lookAt matrix after calculating movement and rotation
-      context.viewMatrix = mat4.lookAt(mat4.create(), [camera.position.x, camera.position.y, camera.position.z], currentTarget, [0,1,0]);
+      viewMatrix = mat4.lookAt(mat4.create(), [camera.position.x, camera.position.y, camera.position.z], currentTarget, [0,1,0]);
 
-console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
+      //console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
 
       if(flightCompleted == 1) {
         // update camera direction to smoothly turn again to new target
@@ -724,14 +764,15 @@ console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + 
         camera.direction.z = flight.target[2];
         // initiate next flight when we reached our position
         flight.callback();
-        // set start time of next flight
-        flight.startTime = timeInMilliseconds;
       }
 
     } else if(flight.circling) {
       // circle around given target in current distance from target for given degrees
       // how much of the complete flight duration has already passed?
       var flightCompleted = Math.min((timeInMilliseconds - flight.startTime) / flight.duration, 1);
+      if(flightCompleted < 0) {
+        flightCompleted = 0;
+      }
 
       var radius = Math.abs(vec3.distance(vec3.fromValues(camera.position.x, camera.position.y, camera.position.z), vec3.fromValues(flight.target[0], camera.position.y, flight.target[2]))); // note as we circle on our current y position, we actually calculate a circle and not a sphere
 
@@ -746,9 +787,9 @@ console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + 
       camera.position.z = flight.target[2] + radius*Math.sin(glm.deg2rad(currentDegrees));
 
       // and plug them into lookat
-      context.viewMatrix = mat4.lookAt(mat4.create(), [camera.position.x, camera.position.y, camera.position.z], flight.target, [0,1,0]);
+      viewMatrix = mat4.lookAt(mat4.create(), [camera.position.x, camera.position.y, camera.position.z], flight.target, [0,1,0]);
 
-console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
+      //console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
 
       // initiate next flight when we reached our position
       if(flightCompleted == 1) {
@@ -760,26 +801,91 @@ console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + 
         flight.callback();
       }
     }
-
   // free camera
   } else {
     // free moving camera: https://sidvind.com/wiki/Yaw,_pitch,_roll_camera
     // gl-matrix doc: http://glmatrix.net/docs/mat4.html
     let center = [camera.position.x + Math.cos(camera.rotation.x) * Math.sin(camera.rotation.y), camera.position.y + Math.cos(camera.rotation.y), camera.position.z + Math.sin(camera.rotation.y) * Math.sin(camera.rotation.x)];
     // generate view matrix from position, center and up
-    context.viewMatrix = mat4.lookAt(mat4.create(), [camera.position.x, camera.position.y, camera.position.z], center, [0,1,0]);
+    viewMatrix = mat4.lookAt(mat4.create(), [camera.position.x, camera.position.y, camera.position.z], center, [0,1,0]);
 
     // extract normalized direction vector generated by lookAt - used to move in pointed direction
-    camera.direction.x = context.viewMatrix[2];
-    camera.direction.y = context.viewMatrix[6];
-    camera.direction.z = context.viewMatrix[10];
-
-
-console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
+    camera.direction.x = viewMatrix[2];
+    camera.direction.y = viewMatrix[6];
+    camera.direction.z = viewMatrix[10];
+    //console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + camera.rotation.y.toFixed(2) + "  |  x:" + camera.position.x.toFixed(2) + " y:" + camera.position.y.toFixed(2) + " z:" + camera.position.z.toFixed(2) + "  |  dirx:" + camera.direction.x.toFixed(2) + " diry:" + camera.direction.y.toFixed(2) + " dirz:" + camera.direction.z.toFixed(2));
   }
+  // view matrix calculated!
 
-  //render scenegraph
+
+
+  // first render to texture
+  gl.bindFramebuffer(gl.FRAMEBUFFER, renderTargetFramebuffer);
+  //setup viewport
+  gl.viewport(0, 0, width, height);
+  gl.clearColor(0.9, 0.9, 0.9, 1.0);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  //setup context and camera matrices
+  const context = createSGContext(gl);
+  // TODO which Field of view/other parameters?
+  context.projectionMatrix = mat4.perspective(mat4.create(), 50, gl.drawingBufferWidth / gl.drawingBufferHeight, 1, 5000);
+  context.viewMatrix = viewMatrix;
+  //render scenegraph (into framebuffer)
   root.render(context);
+  //disable framebuffer (render to screen again)
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+
+
+  // do post processing (rendering framebuffer to screen using post process shader)
+  //setup viewport
+  gl.viewport(0, 0, width, height);
+  gl.clearColor(0.9, 0.9, 0.9, 1.0);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  //activate the post processing shader
+  gl.useProgram(postProcessProgram);
+  // set some shader parameters
+  gl.uniform1f(gl.getUniformLocation(postProcessProgram, 'time'), timeInMilliseconds/1000);
+  gl.uniform1f(gl.getUniformLocation(postProcessProgram, 'distortionFactor'), 0.015);
+  gl.uniform1f(gl.getUniformLocation(postProcessProgram, 'riseFactor'), 0.75);
+  // set the texture to render in the shader
+  gl.uniform1i(gl.getUniformLocation(postProcessProgram, 'u_sceneTex'), 0); // texture unit 0
+  // set the depthmap
+  gl.uniform1i(gl.getUniformLocation(postProcessProgram, 'u_depthMap'), 1); // texture unit 1
+
+  // create a texture from distortionmap as image
+  gl.activeTexture(gl.TEXTURE0 + 2);  // texture unit 2
+  var distortionMap = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, distortionMap);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);  // repeat needed for shader effect
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, resources.distortionMap);
+
+  gl.uniform1i(gl.getUniformLocation(postProcessProgram, 'u_distortionMap'), 2); // texture unit 2
+  //activate/select texture unit and bind texture
+  gl.activeTexture(gl.TEXTURE0 + 0);
+  gl.bindTexture(gl.TEXTURE_2D, renderTargetColorTexture);
+  gl.activeTexture(gl.TEXTURE0 + 1);
+  gl.bindTexture(gl.TEXTURE_2D, renderTargetDepthTexture);
+  // build a fullscreen quad on which we'll render the scene in the framebuffer
+  var buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  const arr = new Float32Array([
+    -1.0, -1.0,
+    1.0, -1.0,
+    -1.0, 1.0,
+    -1.0, 1.0,
+    1.0, -1.0,
+    1.0, 1.0]);
+  //copy data to GPU
+  gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
+  const positionLocation = gl.getAttribLocation(postProcessProgram, 'a_position');
+  gl.enableVertexAttribArray(positionLocation);
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
 
   //request another call as soon as possible
   requestAnimationFrame(render);
@@ -787,11 +893,14 @@ console.log("rotationx: " + camera.rotation.x.toFixed(2) + "  |  rotationy: " + 
 
 //load the shader resources using a utility function
 loadResources({
-  // TODO shaders - copied from lab
-  vs: 'shader/shadow.vs.glsl',
-  fs: 'shader/shadow.fs.glsl',
+  // shaders
+  vs: 'shader/phong.vs.glsl',
+  fs: 'shader/phong.fs.glsl',
+  postProcessVs: 'shader/heatshimmer.vs.glsl',
+  postProcessFs: 'shader/heatshimmer.fs.glsl',
+  distortionMap: 'assets/distortion_map.jpg',
 
-  // test different shader
+  // test different shader TODO remove
   whiteVs : 'shader/white.vs.glsl',
   whiteFs : 'shader/white.fs.glsl',
 
@@ -807,6 +916,7 @@ loadResources({
   crawlerTex0: 'assets/crawlers0.jpg',
   crawlerTex1: 'assets/crawlers1.jpg',
   platformTex: 'assets/platform.jpg',
+  testTex: 'assets/test.jpg',
 
   // models
   leia: 'assets/models/leia/Leia/Leia.obj'

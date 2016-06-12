@@ -19,12 +19,12 @@ createProgram	libs/framework.js	/^function createProgram(gl, vertex, fragment) {
 createSGContext	libs/framework.js	/^function createSGContext(gl, projectionMatrix) {$/;"	f
 createSceneGraph	00_empty/main.js	/^function createSceneGraph(resources) {$/;"	f
 createShader	libs/framework.js	/^function createShader(gl, code, type) {$/;"	f
-firstTurnCompleted	00_empty/main.js	/^var firstTurnCompleted = false;$/;"	v
 generateTerrain	00_empty/main.js	/^function generateTerrain(heightmap, stepX, stepY, heightScaling) {$/;"	f
 gl	00_empty/main.js	/^var gl = null,$/;"	v
 hex2rgba	libs/framework.js	/^function hex2rgba(color) {$/;"	f
-init	00_empty/main.js	/^function init(resources) {$/;"	f
+init	00_empty/main.js	/^function init(resources) {$/;"	c
 initInteraction	00_empty/main.js	/^function initInteraction(canvas) {$/;"	f
+initRenderToTexture	00_empty/main.js	/^function initRenderToTexture() {$/;"	f
 isValidAttributeLocation	libs/framework.js	/^function isValidAttributeLocation(loc) {$/;"	f
 isValidUniformLocation	libs/framework.js	/^function isValidUniformLocation(loc) {$/;"	f
 light2TranNode	00_empty/main.js	/^var light2TranNode;$/;"	v
@@ -41,7 +41,10 @@ modelRenderer.init	libs/framework.js	/^  function init(gl) {$/;"	f
 parseMtlFile	libs/framework.js	/^function parseMtlFile(fileContent) {$/;"	f
 parseObjFile	libs/framework.js	/^function parseObjFile(objectData) {$/;"	f
 render	00_empty/main.js	/^function render(timeInMilliseconds) {$/;"	f
-root	00_empty/main.js	/^var root = null;$/;"	v
+renderTargetColorTexture	00_empty/main.js	/^var renderTargetColorTexture = null;$/;"	v
+renderTargetDepthTexture	00_empty/main.js	/^var renderTargetDepthTexture = null;$/;"	v
+renderTargetFramebuffer	00_empty/main.js	/^var renderTargetFramebuffer = null;$/;"	v
+root	00_empty/main.js	/^var root = null, postProcess = null;$/;"	v
 setupFlight	00_empty/main.js	/^function setupFlight(straight, circling, duration, startTime, target, degrees, turnPart, next, nextTarget, callback) {$/;"	f
 sg.context	libs/framework.js	/^  },$/;"	p
 sg.draw	libs/framework.js	/^  },$/;"	m
@@ -57,3 +60,4 @@ sg.transform	libs/framework.js	/^  },$/;"	m
 sg.translate	libs/framework.js	/^  },$/;"	m
 timePrev	00_empty/main.js	/^var timePrev = 0;$/;"	v
 toPos	00_empty/main.js	/^  function toPos(event) {$/;"	f
+width	00_empty/main.js	/^var width = 1024, height = 1024;$/;"	v
