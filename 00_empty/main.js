@@ -8,7 +8,7 @@ var renderTargetFramebuffer = null;
 var renderTargetColorTexture = null;
 var renderTargetDepthTexture = null;
 
-var width = 1024, height = 1024;
+var width = 512, height = 512;
 
 var timePrev = 0;
 
@@ -71,6 +71,9 @@ function init(resources) {
   gl = createContext(width /*width*/, height /*height*/); // TODO which width and height?
 
   gl.enable(gl.DEPTH_TEST);
+  // allow alpha textures
+  gl.enable (gl.BLEND) ;
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   //compile and link shader program
   program = createProgram(gl, resources.vs, resources.fs);
@@ -190,9 +193,10 @@ function createSceneGraph(resources) {
 
   let lightSphere = makeSphere(0.5, 20, 20);
   let lightModelNode = new RenderSGNode(lightSphere);
-  let lightTexNode = new AdvancedTextureSGNode(resources.sunTex);
+  let lightTexNode = new AdvancedTextureSGNode(resources.wilsonAlphaTex);
   let lightMatNode = new MaterialSGNode();
   let lightNode = new MyLightNode([300, -150, 300], 0, 30, [1,1,1]);
+  let transparentShaderNode = new ShaderSGNode(createProgram(gl, resources.alphaVs, resources.alphaFs));
 
   let light2Sphere = makeSphere(20, 20, 20);
   let light2ModelNode = new RenderSGNode(light2Sphere);
@@ -273,7 +277,8 @@ function createSceneGraph(resources) {
   lightMatNode.append(lightTexNode);
   lightTexNode.append(enableTexNode);
   lightTexNode.append(sphereModelNode);
-  root.append(lightNode);
+  transparentShaderNode.append(lightNode);
+  root.append(transparentShaderNode);
 
   light2Node.append(light2ModelNode);
   light2TranNode.append(light2Node);
@@ -899,6 +904,8 @@ loadResources({
   postProcessVs: 'shader/heatshimmer.vs.glsl',
   postProcessFs: 'shader/heatshimmer.fs.glsl',
   distortionMap: 'assets/distortion_map.jpg',
+  alphaVs: 'shader/hologram.vs.glsl',
+  alphaFs: 'shader/hologram.fs.glsl',
 
   // test different shader TODO remove
   whiteVs : 'shader/white.vs.glsl',
@@ -917,6 +924,7 @@ loadResources({
   crawlerTex1: 'assets/crawlers1.jpg',
   platformTex: 'assets/platform.jpg',
   testTex: 'assets/test.jpg',
+  wilsonAlphaTex: 'assets/wilson_alpha.png',
 
   // models
   leia: 'assets/models/leia/Leia/Leia.obj'
