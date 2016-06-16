@@ -1,3 +1,5 @@
+// it's quite hot on tatooine
+
 precision mediump float;
 
 uniform sampler2D u_sceneTex;

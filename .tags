@@ -4,48 +4,131 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+billTranNode	00_empty/main.js	/^var billTranNode;$/;"	v
+billTranNode	00_empty/main2.js	/^var billTranNode;$/;"	v
+billTranNode	00_empty/main4.js	/^var billTranNode;$/;"	v
 calculateNormals	00_empty/main.js	/^function calculateNormals(vertexTriangles, vertices, normal, flip) {$/;"	f
+calculateNormals	00_empty/main2.js	/^function calculateNormals(vertexTriangles, vertices, normal, flip) {$/;"	f
+calculateNormals	00_empty/main4.js	/^function calculateNormals(vertexTriangles, vertices, normal, flip) {$/;"	f
 cameraEnabled	00_empty/main.js	/^var cameraEnabled = false;$/;"	v
+cameraIsInRadius	00_empty/main.js	/^function cameraIsInRadius(point, radius){$/;"	f
+cameraIsInRadius	00_empty/main2.js	/^function cameraIsInRadius(point){$/;"	f
+cameraIsInRadius	00_empty/main4.js	/^function cameraIsInRadius(point){$/;"	f
 checkForWindowResize	libs/framework.js	/^function checkForWindowResize(gl) {$/;"	f
 composeCrawlerQuad	00_empty/main.js	/^function composeCrawlerQuad(resources) {$/;"	f
+composeCrawlerQuad	00_empty/main2.js	/^function composeCrawlerQuad(resources) {$/;"	f
+composeCrawlerQuad	00_empty/main4.js	/^function composeCrawlerQuad(resources) {$/;"	f
 const.circling	00_empty/main.js	/^  straight: false,$/;"	p
 const.duration	00_empty/main.js	/^  circling: false,$/;"	p
 const.origin	00_empty/main.js	/^  duration: 0,$/;"	p
 const.pos	00_empty/main.js	/^  const mouse = {$/;"	p
+const.pos	00_empty/main2.js	/^  const mouse = {$/;"	p
+const.pos	00_empty/main4.js	/^  const mouse = {$/;"	p
 const.rotation	00_empty/main.js	/^const camera = {$/;"	p
+const.rotation	00_empty/main2.js	/^const camera = {$/;"	p
+const.rotation	00_empty/main4.js	/^const camera = {$/;"	p
 const.straight	00_empty/main.js	/^const flight = {$/;"	p
 createContext	libs/framework.js	/^function createContext(width, height) {$/;"	f
 createProgram	libs/framework.js	/^function createProgram(gl, vertex, fragment) {$/;"	f
 createSGContext	libs/framework.js	/^function createSGContext(gl, projectionMatrix) {$/;"	f
 createSceneGraph	00_empty/main.js	/^function createSceneGraph(resources) {$/;"	f
+createSceneGraph	00_empty/main2.js	/^function createSceneGraph(resources) {$/;"	f
+createSceneGraph	00_empty/main4.js	/^function createSceneGraph(resources) {$/;"	f
 createShader	libs/framework.js	/^function createShader(gl, code, type) {$/;"	f
+distortionMapTex	00_empty/main.js	/^var distortionMapTex = null;$/;"	v
 generateTerrain	00_empty/main.js	/^function generateTerrain(heightmap, stepX, stepY, heightScaling) {$/;"	f
-gl	00_empty/main.js	/^var gl = null,$/;"	v
+generateTerrain	00_empty/main2.js	/^function generateTerrain(heightmap, stepX, stepY, heightScaling) {$/;"	f
+generateTerrain	00_empty/main4.js	/^function generateTerrain(heightmap, stepX, stepY, heightScaling) {$/;"	f
+gl	00_empty/main.js	/^var gl = null;$/;"	v
+gl	00_empty/main2.js	/^var gl = null,$/;"	v
+gl	00_empty/main4.js	/^var gl = null,$/;"	v
 hex2rgba	libs/framework.js	/^function hex2rgba(color) {$/;"	f
 init	00_empty/main.js	/^function init(resources) {$/;"	c
+init	00_empty/main2.js	/^function init(resources) {$/;"	f
+init	00_empty/main4.js	/^function init(resources) {$/;"	f
+initDistortionMapTexture	00_empty/main.js	/^function initDistortionMapTexture(image) {$/;"	f
 initInteraction	00_empty/main.js	/^function initInteraction(canvas) {$/;"	f
+initInteraction	00_empty/main2.js	/^function initInteraction(canvas) {$/;"	f
+initInteraction	00_empty/main4.js	/^function initInteraction(canvas) {$/;"	f
 initRenderToTexture	00_empty/main.js	/^function initRenderToTexture() {$/;"	f
 isValidAttributeLocation	libs/framework.js	/^function isValidAttributeLocation(loc) {$/;"	f
 isValidUniformLocation	libs/framework.js	/^function isValidUniformLocation(loc) {$/;"	f
-light2TranNode	00_empty/main.js	/^var light2TranNode;$/;"	v
-light2TranY	00_empty/main.js	/^var light2TranY = 0;$/;"	v
+landspeederSceneTranNode	00_empty/main.js	/^var landspeederSceneTranNode;$/;"	v
+landspeederSceneTranNode	00_empty/main2.js	/^var landspeederSceneTranNode;$/;"	v
+landspeederSceneTranNode	00_empty/main4.js	/^var landspeederSceneTranNode;$/;"	v
+landspeederTranNode	00_empty/main.js	/^var landspeederTranNode;$/;"	v
+landspeederTranNode	00_empty/main2.js	/^var landspeederTranNode;$/;"	v
+landspeederTranNode	00_empty/main4.js	/^var landspeederTranNode;$/;"	v
+leiaRotNode	00_empty/main.js	/^var leiaRotNode;$/;"	v
+leiaRotNode	00_empty/main2.js	/^var leiaRotNode;$/;"	v
+leiaRotNode	00_empty/main4.js	/^var leiaRotNode;$/;"	v
+leiaTranNode	00_empty/main.js	/^var leiaTranNode;$/;"	v
+leiaTranNode	00_empty/main2.js	/^var leiaTranNode;$/;"	v
+light2TranNode	00_empty/main2.js	/^var light2TranNode;$/;"	v
+light2TranNode	00_empty/main4.js	/^var light2TranNode;$/;"	v
+light2TranY	00_empty/main2.js	/^var light2TranY = 0;$/;"	v
+light2TranY	00_empty/main4.js	/^var light2TranY = 0;$/;"	v
 loadResources	libs/framework.js	/^function loadResources(resources, callback) {$/;"	f
 loadResources.isImageUrl	libs/framework.js	/^  function isImageUrl(url) {$/;"	f
 loadResources.isModelUrl	libs/framework.js	/^  function isModelUrl(url) {$/;"	f
 loadResources.isObjUrl	libs/framework.js	/^  function isObjUrl(url) {$/;"	f
+lukeDegrees	00_empty/main.js	/^var lukeDegrees = 0; \/\/how much luke has rotated already$/;"	v
+lukeDegrees	00_empty/main2.js	/^var lukeDegrees = 0; \/\/how much luke has rotated already$/;"	v
+lukeDegrees	00_empty/main4.js	/^var lukeDegrees = 0; \/\/how much luke has rotated already$/;"	v
+lukeMoved	00_empty/main.js	/^var lukeMoved = 0; \/\/how much luke moved to his landspeeder already$/;"	v
+lukeMoved	00_empty/main2.js	/^var lukeMoved = 0; \/\/how much luke moved to his landspeeder already$/;"	v
+lukeMoved	00_empty/main4.js	/^var lukeMoved = 0; \/\/how much luke moved to his landspeeder already$/;"	v
+lukeTranNode	00_empty/main.js	/^var lukeTranNode;$/;"	v
+lukeTranNode	00_empty/main2.js	/^var lukeTranNode;$/;"	v
+lukeTranNode	00_empty/main4.js	/^var lukeTranNode;$/;"	v
 makeRect	libs/framework.js	/^function makeRect(width, height) {$/;"	f
 makeSandcrawlerBody	00_empty/main.js	/^function makeSandcrawlerBody() {$/;"	f
+makeSandcrawlerBody	00_empty/main2.js	/^function makeSandcrawlerBody() {$/;"	f
+makeSandcrawlerBody	00_empty/main4.js	/^function makeSandcrawlerBody() {$/;"	f
 makeSphere	libs/framework.js	/^function makeSphere(radius, latitudeBands, longitudeBands) {$/;"	f
 modelRenderer	libs/framework.js	/^function modelRenderer(model) {$/;"	f
 modelRenderer.init	libs/framework.js	/^  function init(gl) {$/;"	f
 parseMtlFile	libs/framework.js	/^function parseMtlFile(fileContent) {$/;"	f
 parseObjFile	libs/framework.js	/^function parseObjFile(objectData) {$/;"	f
+program	00_empty/main.js	/^var program = null,$/;"	v
 render	00_empty/main.js	/^function render(timeInMilliseconds) {$/;"	f
+render	00_empty/main2.js	/^function render(timeInMilliseconds) {$/;"	f
+render	00_empty/main4.js	/^function render(timeInMilliseconds) {$/;"	f
+renderBillboard	00_empty/main.js	/^function renderBillboard(context){$/;"	f
+renderBillboard	00_empty/main2.js	/^function renderBillboard(context){$/;"	f
+renderBillboard	00_empty/main4.js	/^function renderBillboard(context){$/;"	f
+renderLandspeederScene	00_empty/main.js	/^function renderLandspeederScene(timeDelta){$/;"	f
+renderLandspeederScene	00_empty/main2.js	/^function renderLandspeederScene(timeDelta){$/;"	f
+renderLandspeederScene	00_empty/main4.js	/^function renderLandspeederScene(timeDelta){$/;"	f
+renderMovingLightSource	00_empty/main.js	/^function renderMovingLightSource(timeDelta){$/;"	f
+renderMovingLightSource	00_empty/main2.js	/^function renderMovingLightSource(timeDelta){$/;"	f
+renderMovingLightSource	00_empty/main4.js	/^function renderMovingLightSource(timeDelta){$/;"	f
+renderSandcrawlerScene	00_empty/main.js	/^function renderSandcrawlerScene(timeDelta){$/;"	f
+renderSandcrawlerScene	00_empty/main2.js	/^function renderSandcrawlerScene(timeDelta){$/;"	f
+renderSandcrawlerScene	00_empty/main4.js	/^function renderSandcrawlerScene(timeDelta){$/;"	f
 renderTargetColorTexture	00_empty/main.js	/^var renderTargetColorTexture = null;$/;"	v
 renderTargetDepthTexture	00_empty/main.js	/^var renderTargetDepthTexture = null;$/;"	v
 renderTargetFramebuffer	00_empty/main.js	/^var renderTargetFramebuffer = null;$/;"	v
-root	00_empty/main.js	/^var root = null, postProcess = null;$/;"	v
-setupFlight	00_empty/main.js	/^function setupFlight(straight, circling, duration, startTime, target, degrees, turnPart, next, nextTarget, callback) {$/;"	f
+renderVolleyballScene	00_empty/main.js	/^function renderVolleyballScene(timeDelta){$/;"	f
+renderVolleyballScene	00_empty/main2.js	/^function renderVolleyballScene(timeDelta){$/;"	f
+renderVolleyballScene	00_empty/main4.js	/^function renderVolleyballScene(timeDelta){$/;"	f
+resources	00_empty/main.js	/^var resources = null;$/;"	v
+root	00_empty/main.js	/^var root = null;$/;"	v
+root	00_empty/main2.js	/^var root = null;$/;"	v
+root	00_empty/main4.js	/^var root = null;$/;"	v
+sandcrawlerMoved	00_empty/main.js	/^var sandcrawlerMoved = 0; \/\/how much the sandcrawler has moved$/;"	v
+sandcrawlerMoved	00_empty/main4.js	/^var sandcrawlerMoved = 0; \/\/how much the sandcrawler has moved$/;"	v
+sandcrawlerPlatformDegrees	00_empty/main.js	/^var sandcrawlerPlatformDegrees = 0; \/\/how much the platform has rotated already$/;"	v
+sandcrawlerPlatformDegrees	00_empty/main2.js	/^var sandcrawlerPlatformDegrees = 0; \/\/how much the platform has rotated already$/;"	v
+sandcrawlerPlatformDegrees	00_empty/main4.js	/^var sandcrawlerPlatformDegrees = 0; \/\/how much the platform has rotated already$/;"	v
+sandcrawlerPlatformTranNode	00_empty/main.js	/^var sandcrawlerPlatformTranNode;$/;"	v
+sandcrawlerPlatformTranNode	00_empty/main2.js	/^var sandcrawlerPlatformTranNode;$/;"	v
+sandcrawlerPlatformTranNode	00_empty/main4.js	/^var sandcrawlerPlatformTranNode;$/;"	v
+sandcrawlerSpotlightNode	00_empty/main2.js	/^var sandcrawlerSpotlightNode;$/;"	v
+sandcrawlerTranNode	00_empty/main.js	/^var sandcrawlerTranNode;$/;"	v
+sandcrawlerTranNode	00_empty/main2.js	/^var sandcrawlerTranNode;$/;"	v
+sandcrawlerTranNode	00_empty/main4.js	/^var sandcrawlerTranNode;$/;"	v
+setupFlight	00_empty/main.js	/^function setupFlight(straight, circling, duration, startTime, target, degrees, initialJumpDir, turnPart, next, nextTarget, callback) {$/;"	f
 sg.context	libs/framework.js	/^  },$/;"	p
 sg.draw	libs/framework.js	/^  },$/;"	m
 sg.drawRect	libs/framework.js	/^  },$/;"	m
@@ -58,6 +141,31 @@ sg.scale	libs/framework.js	/^  },$/;"	m
 sg.shader	libs/framework.js	/^  },$/;"	m
 sg.transform	libs/framework.js	/^  },$/;"	m
 sg.translate	libs/framework.js	/^  },$/;"	m
+sphereTranNode	00_empty/main2.js	/^var sphereTranNode;$/;"	v
+sphereTranNode	00_empty/main4.js	/^var sphereTranNode;$/;"	v
+sun1TranNode	00_empty/main.js	/^var sun1TranNode;$/;"	v
 timePrev	00_empty/main.js	/^var timePrev = 0;$/;"	v
+timePrev	00_empty/main2.js	/^var timePrev = 0;$/;"	v
+timePrev	00_empty/main4.js	/^var timePrev = 0;$/;"	v
 toPos	00_empty/main.js	/^  function toPos(event) {$/;"	f
-width	00_empty/main.js	/^var width = 1024, height = 1024;$/;"	v
+toPos	00_empty/main2.js	/^  function toPos(event) {$/;"	f
+toPos	00_empty/main4.js	/^  function toPos(event) {$/;"	f
+volleyballDirection	00_empty/main.js	/^var volleyballDirection = 1.0; \/\/1 or -1, so the ball flies back and forth$/;"	v
+volleyballDirection	00_empty/main2.js	/^var volleyballDirection = 1.0; \/\/1 or -1, so the ball flies back and forth$/;"	v
+volleyballDirection	00_empty/main4.js	/^var volleyballDirection = 1.0; \/\/1 or -1, so the ball flies back and forth$/;"	v
+volleyballDistance	00_empty/main.js	/^var volleyballDistance = 100.0; \/\/how far the ball should fly (distance between r2d2)$/;"	v
+volleyballDistance	00_empty/main2.js	/^var volleyballDistance = 100.0; \/\/how far the ball should fly (distance between r2d2)$/;"	v
+volleyballDistance	00_empty/main4.js	/^var volleyballDistance = 100.0; \/\/how far the ball should fly (distance between r2d2)$/;"	v
+volleyballLocation	00_empty/main.js	/^var volleyballLocation = 0; \/\/current location in volleyballDistance$/;"	v
+volleyballLocation	00_empty/main2.js	/^var volleyballLocation = 0; \/\/current location in volleyballDistance$/;"	v
+volleyballLocation	00_empty/main4.js	/^var volleyballLocation = 0; \/\/current location in volleyballDistance$/;"	v
+volleyballSceneTranNode	00_empty/main.js	/^var volleyballSceneTranNode; \/\/complete scene$/;"	v
+volleyballSceneTranNode	00_empty/main2.js	/^var volleyballSceneTranNode; \/\/complete scene$/;"	v
+volleyballSceneTranNode	00_empty/main4.js	/^var volleyballSceneTranNode; \/\/complete scene$/;"	v
+volleyballSpeed	00_empty/main.js	/^var volleyballSpeed = 0;  \/\/for time-based animation$/;"	v
+volleyballSpeed	00_empty/main2.js	/^var volleyballSpeed = 0;  \/\/for time-based animation$/;"	v
+volleyballSpeed	00_empty/main4.js	/^var volleyballSpeed = 0;  \/\/for time-based animation$/;"	v
+volleyballTranNode	00_empty/main.js	/^var volleyballTranNode; \/\/ball translation$/;"	v
+volleyballTranNode	00_empty/main2.js	/^var volleyballTranNode; \/\/ball translation$/;"	v
+volleyballTranNode	00_empty/main4.js	/^var volleyballTranNode; \/\/ball translation$/;"	v
+width	00_empty/main.js	/^var width = 512, height = 512;$/;"	v

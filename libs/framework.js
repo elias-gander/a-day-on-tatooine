@@ -906,8 +906,6 @@ class MaterialSGNode extends SGNode {
  * the light position will be transformed according to the current model view matrix
  */
 class LightSGNode extends TransformationSGNode {
-  // TODO don't change framework ....... (new modified light node needed)
-
   constructor(position, children) {
     super(children);
     this.position = position || [0, 0, 0];

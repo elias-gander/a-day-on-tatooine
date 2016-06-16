@@ -1,6 +1,6 @@
 // Phong Vertex Shader
 
-#define MAX_LIGHTS 2
+#define MAX_LIGHTS 5
 
 attribute vec3 a_position;
 attribute vec3 a_normal;
@@ -9,9 +9,9 @@ attribute vec2 a_texCoord;
 uniform mat4 u_modelView;
 uniform mat3 u_normalMatrix;
 uniform mat4 u_projection;
+uniform mat4 u_invView;	// to get only model(and not view) transformated vertex and light position (for spotlight computations)
 
 uniform vec3 u_lightPos[MAX_LIGHTS];
-uniform vec3 u_lightPosOriginal[MAX_LIGHTS];	// used for spotlight computation (not model view transformed as that causes the spotlighted area to move with the camera)
 
 //output of this shader
 varying vec3 v_normalVec;
@@ -32,7 +32,7 @@ void main() {
 	for(int i = 0; i < MAX_LIGHTS; i++) {
 		v_lightVec[i] = u_lightPos[i] - eyePosition.xyz;
 
-		v_lightToSurface[i] = a_position - u_lightPosOriginal[i];
+		v_lightToSurface[i] = ((u_invView * eyePosition) - u_invView * vec4(u_lightPos[i], 1)).xyz;		// spotlighted is independent of camera movement
 	}
 
 	//pass on texture coordinates
