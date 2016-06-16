@@ -3,7 +3,7 @@
 // It shows the basic priciples in a simple way and is sufficient for our lab exercises.
 precision mediump float;
 
-#define MAX_LIGHTS 5
+#define MAX_LIGHTS 2
 
 /**
  * definition of a material structure containing common properties

@@ -1,6 +1,6 @@
 // Phong Vertex Shader
 
-#define MAX_LIGHTS 5
+#define MAX_LIGHTS 2
 
 attribute vec3 a_position;
 attribute vec3 a_normal;
