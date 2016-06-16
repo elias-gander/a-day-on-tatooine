@@ -1,0 +1,51 @@
+Algorithmic Effects Description: A day on Tatooine
+
+Terrain Generation from Heightmap:
+	How can the effect be seen:
+	The terrain visible in the scene is generated this way.
+
+	How does the effect work in theory:
+	Starting with a greyscale heightmap image we have a big matrix of rgba values.
+	We use these values to deduct the height of one point of the terrain.
+	A higher value represents a lighter point in the image and also represents a higher point in the terrain.
+	The x and y position of a point of the terrain corresponds to x and y position on the image.
+
+	How is the effect implemented:
+	Sadly until after implementation I did not realize that a vertex shader should have been used,
+	which probably would have been more efficient and also simpler to implement. Using javascript,
+	we iterate over the whole heightmap, skipping a variable number of lines and columns to make the process faster.
+	From every pixel of the image that we decide to integrate into the terrain,
+	we create a vertex deducting the coordinates from image line/column and rgba value. Then as the terrain is basically a plane,
+	every vertex (except the ones on the border which are handled separately) are part of 6 triangles
+	which are specified in the corresponding datastructure (see implementation comments for details here).
+	At last normals and texture coordinates have to be calculated for each vertex.
+	The normal vectors can be calculated by taking all triangles adjacent to a vertex,
+	calculating their surface normals, summing them up while also weighting them by their
+	contribution to the vertex normal (which depends on the triangle area) and then normalizing the result.
+	For repeating textures we just have to make sure that no adjacent vertices have the same texture
+	coordinates while of course still correctly spread coordinates must be chosen. Since the terrain is just a
+	rectangular plane we can rather more or less easily find a pattern of such coordinates which is
+	described more extensively in the corresponding implementation comments.
+
+
+Post Processing Shader - Heatshimmering (based on https://github.com/SFML/SFML/wiki/Source:-HeatHazeShader):
+	How can the effect be seen:
+	With increasing viewing distance, the visible image is being distorted simulating shimmering of the air
+	as it happens for example behind a jet engine.
+
+	How does the effect work in theory:
+	Objects viewed through a layer of heated air are being distorted, this is due to convection: Hot air rises,
+	then cools down and thus sinks again until it is heated again.
+	This causes a lot of movement in the air which has a distorting effect also called heat haze.
+
+	How is the effect implemented:
+	For implementation we use a distortion map which is basically noise that controls the intensity of the effect,
+	to avoid jerky effect it should be repeatable. Taking the current time and our general texture coordinates,
+	we determine the current position where we read from the distortion map. This is also influenced by the rise
+	factor which determines how fast we move upwards in the map and thus controls the 'speed' of the effect.
+	After bringing the calculated coordinates to the correct range we read from the map and multiply the read
+	value by the distortion factor. This simply controls the intensity of the distortion.
+	Then further at the top of the viewing area we currently are the distortion is being dampened
+	because as described in the theory - air will cool down at some point and sink down.
+	Finally we have the real distortion value which is used as an offset to our texture
+	coordinates (which are used to access the scene image we rendered to a texture in the previous rendering step).
