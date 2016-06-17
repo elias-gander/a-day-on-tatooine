@@ -49,3 +49,8 @@ Post Processing Shader - Heatshimmering (based on https://github.com/SFML/SFML/w
 	because as described in the theory - air will cool down at some point and sink down.
 	Finally we have the real distortion value which is used as an offset to our texture
 	coordinates (which are used to access the scene image we rendered to a texture in the previous rendering step).
+	As a enhancement to the source, we further rendered a depth map into the framebuffer and then accessed this
+	depth map while post processing to have an additional parameter for controlling the intensity of the effect.
+	Scene points that are further away from the camera will have a stronger distortion effect applied. The theory background of
+	this effect is that for scene points further from the camera, light has to pass through a thicker layer of moving air
+	and thus will be distorted more.
